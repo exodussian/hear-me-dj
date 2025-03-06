@@ -1,16 +1,28 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
-import prisma from "@/lib/prisma";
+import { authOptions } from "../auth/[...nextauth]/route";
+import prisma from '../../../../src/lib/prisma';
 import { NextResponse } from "next/server";
+
+// Tür tanımlamaları burada ekleniyor
+interface SessionUser {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+}
+
+interface Session {
+  user: SessionUser;
+}
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as Session | null;
     
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+ 
     const userId = session.user.id;
     const { words } = await request.json();
     

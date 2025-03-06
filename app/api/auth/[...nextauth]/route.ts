@@ -1,6 +1,5 @@
 import NextAuth from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
-
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -9,8 +8,20 @@ export const authOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
+  callbacks: {
+    async session({ session, user }) {
+      if (session.user) {
+        session.user.id = user.id;
+      }
+      return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Giriş için dashboard'a yönlendir
+      if (url.includes('/signin') || url === baseUrl) {
+        return `${baseUrl}/dashboard`;
+      }
+      // Diğer yönlendirmeler
+      return url;
+    },
+  },
 };
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
