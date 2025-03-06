@@ -1,0 +1,41 @@
+{
+  "name": "hear-me-dj",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.8.0",
+    "@paypal/react-paypal-js": "^8.8.2",
+    "@prisma/client": "^6.4.1",
+    "axios": "^1.8.1",
+    "bad-words": "^4.0.0",
+    "next": "15.2.1",
+    "next-auth": "^4.24.11",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.0.11",
+    "@types/node": "^20",
+    "@types/qrcode.react": "^1.0.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/socket.io-client": "^1.4.36",
+    "autoprefixer": "^10.4.14",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.1",
+    "postcss": "^8.4.23",
+    "prisma": "^6.4.1",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
+  }
+}
