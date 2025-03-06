@@ -3,19 +3,35 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Session } from 'next-auth'
+
+// Session tipi genişletme
+interface ExtendedSession extends Session {
+  user: {
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    settings?: {
+      artistName?: string;
+      // Diğer ayarlar
+    } | null;
+  } & Record<string, unknown>;
+}
 
 export default function DashboardClient() {
-  const { data: session, status } = useSession()
-  const [loading, setLoading] = useState(true)
+  const { data: session, status } = useSession();
+  const extendedSession = session as ExtendedSession;
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status !== 'loading') {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [status])
+  }, [status]);
 
   if (loading) {
-    return <div className="container mx-auto px-4 py-8">Yükleniyor...</div>
+    return <div className="container mx-auto px-4 py-8">Yükleniyor...</div>;
   }
 
   if (!session) {
@@ -29,7 +45,7 @@ export default function DashboardClient() {
           Giriş Yap
         </Link>
       </div>
-    )
+    );
   }
 
   return (
@@ -38,7 +54,7 @@ export default function DashboardClient() {
         <h1 className="text-3xl font-bold">DJ Dashboard</h1>
         <button 
           onClick={() => {
-            window.location.href = "/api/auth/signout?callbackUrl=/";
+            window.location.href = '/api/auth/signout?callbackUrl=/';
           }}
           className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
         >
@@ -62,9 +78,9 @@ export default function DashboardClient() {
         <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-semibold mb-4">DJ Profili</h2>
           <div className="space-y-2 mb-4">
-            <p><span className="font-semibold">İsim:</span> {session.user?.name || 'N/A'}</p>
-            <p><span className="font-semibold">Email:</span> {session.user?.email || 'N/A'}</p>
-            <p><span className="font-semibold">Sahne Adı:</span> {session.user?.settings?.artistName || 'Ayarlanmadı'}</p>
+            <p><span className="font-semibold">İsim:</span> {extendedSession.user?.name || 'N/A'}</p>
+            <p><span className="font-semibold">Email:</span> {extendedSession.user?.email || 'N/A'}</p>
+            <p><span className="font-semibold">Sahne Adı:</span> {extendedSession.user?.settings?.artistName || 'Ayarlanmadı'}</p>
           </div>
           <Link 
             href="/dashboard/settings"
@@ -80,5 +96,5 @@ export default function DashboardClient() {
         <p>Henüz bir show kaydı bulunmuyor.</p>
       </div>
     </div>
-  )
+  );
 }
