@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
-import prisma from '../../../../src/lib/prisma';
+import prisma from '../../../src/lib/prisma';
 import { NextResponse } from "next/server";
 
 // Tür tanımlamaları burada ekleniyor

@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from '../../auth/[...nextauth]/route';
 import prisma from '../../../../src/lib/prisma';
 import { NextResponse } from "next/server";
 
@@ -68,7 +68,7 @@ export async function GET() {
       where: { userId }
     });
     
-    return NextResponse.json({ words: bannedWords.map(bw => bw.word) });
+    return NextResponse.json({ words: bannedWords.map((bw: { word: string }) => bw.word) });
   } catch (error) {
     console.error("Error fetching banned words:", error);
     return NextResponse.json({ error: "Failed to fetch banned words" }, { status: 500 });
