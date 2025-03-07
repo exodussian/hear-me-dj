@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
-import AudioVisualizer from '@/components/show/AudioVisualizer'
+import AudioVisualizer from '@/src/components/show/AudioVisualiser'
 
 
 export default function StartShowClient() {
@@ -13,7 +13,7 @@ export default function StartShowClient() {
   const [showId, setShowId] = useState("")
   const [loading, setLoading] = useState(false)
   const [showUrl, setShowUrl] = useState("")
-
+  const [messages, setMessages] = useState<any[]>([]);
   useEffect(() => {
     if (showId) {
       const baseUrl = window.location.origin
@@ -120,7 +120,7 @@ export default function StartShowClient() {
       </div>
     </div>
   )}
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
