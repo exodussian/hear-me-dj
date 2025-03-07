@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 import AudioVisualizer from '@/src/components/show/AudioVisualiser'
-
 export default function StartShowClient() {
   const { data: session, status } = useSession()
   const [showActive, setShowActive] = useState(false)
