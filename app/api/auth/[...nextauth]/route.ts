@@ -1,6 +1,10 @@
 import NextAuth from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import prisma from '../../../../src/lib/prisma';
+
 export const authOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -9,19 +13,22 @@ export const authOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async session({ session, user }: { session: any; user: any }) {
+    async session({ session, token, user }: { session: any; token: any; user: any }) {
+      // Session işleme kodu
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = token?.sub || user?.id;
       }
       return session;
     },
     async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
-      // Giriş için dashboard'a yönlendir
+      // Yönlendirme kodu
       if (url.includes('/signin') || url === baseUrl) {
         return `${baseUrl}/dashboard`;
       }
-      // Diğer yönlendirmeler
       return url;
     },
   },
 };
+
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
