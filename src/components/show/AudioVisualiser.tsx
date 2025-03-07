@@ -1,4 +1,3 @@
-// src/components/show/AudioVisualizer.tsx
 "use client"
 
 import { useRef, useEffect, useState } from 'react'
@@ -53,43 +52,58 @@ export default function AudioVisualizer() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     
-    const width = canvas.width
-    const height = canvas.height
+    // Canvas'ı pencere boyutuna ayarla
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
     
     const analyser = analyserRef.current
     const bufferLength = analyser.frequencyBinCount
     const dataArray = new Uint8Array(bufferLength)
     
-    const barWidth = width / bufferLength
+    const barWidth = (canvas.width / bufferLength) * 2.5
     
     const renderFrame = () => {
       animationRef.current = requestAnimationFrame(renderFrame)
       
       analyser.getByteFrequencyData(dataArray)
       
-      // Siyah arka plan
-      ctx.fillStyle = 'rgb(0, 0, 0)'
-      ctx.fillRect(0, 0, width, height)
+      // Arkaplanı temizle - transparant
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
       
       let x = 0
       
       // Renk geçişli barlar çiz
       for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * height
+        const barHeight = (dataArray[i] / 255) * canvas.height * 0.5
         
         // Renk geçişi: kırmızı -> turuncu -> sarı
         const r = 255
         const g = Math.floor((i / bufferLength) * 255)
         const b = 0
         
-        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
-        ctx.fillRect(x, height - barHeight, barWidth, barHeight)
+        // Daha şeffaf renk
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.7)`
         
-        x += barWidth
+        // Ekran merkezini referans alarak çiz
+        const yPos = canvas.height - barHeight
+        ctx.fillRect(x, yPos, barWidth, barHeight)
+        
+        x += barWidth + 1
       }
     }
     
     renderFrame()
+    
+    // Pencere boyutu değiştiğinde canvas boyutunu ayarla
+    const handleResize = () => {
+      if (canvasRef.current) {
+        canvasRef.current.width = window.innerWidth
+        canvasRef.current.height = window.innerHeight
+      }
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }
 
   const stopVisualization = () => {
@@ -104,45 +118,36 @@ export default function AudioVisualizer() {
     }
     
     setIsActive(false)
-    
-    // Canvas'ı temizle
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d')
-      if (ctx) {
-        ctx.fillStyle = 'rgb(0, 0, 0)'
-        ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height)
-      }
-    }
   }
 
   return (
-    <div className="w-full">
-      <div className="relative">
-        <canvas 
-          ref={canvasRef} 
-          width={800} 
-          height={200} 
-          className="w-full h-48 bg-black rounded-lg"
-        />
-        
-        {!isActive ? (
+    <div className="fixed inset-0 -z-10 pointer-events-none">
+      <canvas 
+        ref={canvasRef} 
+        className="w-full h-full"
+      />
+      
+      {!isActive && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
           <button 
             onClick={startVisualization}
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-                     bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 transition-colors"
+            className="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 transition-colors"
           >
             Mikrofonu Etkinleştir
           </button>
-        ) : (
+        </div>
+      )}
+      
+      {isActive && (
+        <div className="absolute top-4 right-4 pointer-events-auto">
           <button 
             onClick={stopVisualization}
-            className="absolute bottom-2 right-2 bg-red-600 text-white px-2 py-1 
-                     rounded text-sm hover:bg-red-700 transition-colors"
+            className="bg-red-600 text-white px-2 py-1 rounded text-sm hover:bg-red-700 transition-colors opacity-50 hover:opacity-100"
           >
-            Durdur
+            Visualizer Durdur
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

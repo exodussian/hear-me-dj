@@ -6,14 +6,14 @@ import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 import AudioVisualizer from '@/src/components/show/AudioVisualiser'
 
-
 export default function StartShowClient() {
   const { data: session, status } = useSession()
   const [showActive, setShowActive] = useState(false)
   const [showId, setShowId] = useState("")
   const [loading, setLoading] = useState(false)
   const [showUrl, setShowUrl] = useState("")
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([])
+
   useEffect(() => {
     if (showId) {
       const baseUrl = window.location.origin
@@ -38,12 +38,7 @@ export default function StartShowClient() {
       </div>
     )
   }
-  {showActive && (
-    <div className="mt-6">
-      <h3 className="text-xl font-semibold mb-2">Ses Görselleştirme</h3>
-      <AudioVisualizer />
-    </div>
-  )}
+
   const startShow = async () => {
     setLoading(true)
     try {
@@ -103,39 +98,25 @@ export default function StartShowClient() {
     }
   }
 
-  {showActive && (
-    <div className="mt-8 bg-slate-800 p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-semibold mb-4">Canlı Mesajlar</h2>
-      <div className="space-y-4">
-        {messages.length > 0 ? (
-          messages.map((msg) => (
-            <div key={msg.id} className="p-3 bg-gradient-to-r from-red-900/30 to-red-700/30 border-l-4 border-red-500 rounded">
-              <p className="font-bold">{msg.displayName}:</p>
-              <p>{msg.content}</p>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-400">Henüz mesaj yok...</p>
-        )}
-      </div>
-    </div>
-  )}
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto px-4 py-8 relative">
+      {/* Arka plan görselleştirici */}
+      <AudioVisualizer />
+      
+      {/* Sayfa içeriği */}
+      <div className="flex justify-between items-center mb-8 z-10 relative">
         <h1 className="text-3xl font-bold">Show Yönetimi</h1>
         <Link 
           href="/dashboard"
-          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
+          className="bg-gray-600 bg-opacity-70 backdrop-blur-sm text-white px-4 py-2 rounded border-0 hover:bg-gray-700 transition-colors"
         >
           Geri Dön
         </Link>
       </div>
       
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid md:grid-cols-2 gap-8 z-10 relative">
         {/* Sol panel - Kontroller */}
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
+        <div className="bg-slate-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-lg shadow-lg border-0">
           <h2 className="text-2xl font-semibold mb-4">Show Kontrolü</h2>
           
           {!showActive ? (
@@ -168,7 +149,7 @@ export default function StartShowClient() {
         </div>
         
         {/* Sağ panel - QR Kod ve Ses Görselleştirme */}
-        <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
+        <div className="bg-slate-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-lg shadow-lg border-0">
           {showActive ? (
             <div className="text-center">
               <h2 className="text-2xl font-semibold mb-4">Katılım QR Kodu</h2>
@@ -189,9 +170,20 @@ export default function StartShowClient() {
       
       {/* Alt kısım - İstatistikler veya Mesajlar */}
       {showActive && (
-        <div className="mt-8 bg-slate-800 p-6 rounded-lg shadow-lg">
+        <div className="mt-8 bg-slate-800 bg-opacity-50 backdrop-blur-sm p-6 rounded-lg shadow-lg border-0 z-10 relative">
           <h2 className="text-2xl font-semibold mb-4">Canlı Mesajlar</h2>
-          <p className="text-gray-400">Henüz mesaj yok...</p>
+          <div className="space-y-4">
+            {messages.length > 0 ? (
+              messages.map((msg: { id: string; displayName: string; content: string }) => (
+                <div key={msg.id} className="p-3 bg-gradient-to-r from-red-900/30 to-red-700/30 border-l-4 border-red-500 rounded">
+                  <p className="font-bold">{msg.displayName}:</p>
+                  <p>{msg.content}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">Henüz mesaj yok...</p>
+            )}
+          </div>
         </div>
       )}
     </div>
