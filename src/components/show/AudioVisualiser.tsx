@@ -4,121 +4,114 @@ import { useRef, useEffect, useState } from 'react'
 
 export default function AudioVisualizer() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const animationRef = useRef<number | null>(null)
   const [isActive, setIsActive] = useState(false)
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null)
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
+  const [animationId, setAnimationId] = useState<number | null>(null)
 
-  useEffect(() => {
-    return () => {
-      // Cleanup
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
-      }
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-    }
-  }, [])
-
+  // Mikrofon erişimi ve görselleştirmeyi başlat
   const startVisualization = async () => {
     try {
+      // Kullanıcı etkileşiminden sonra mikrofon erişimi talep et
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      console.log("Mikrofon erişimi sağlandı", stream)
       
-      // Audio context oluştur
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      analyserRef.current = audioContextRef.current.createAnalyser()
+      // Yeni audio context oluştur
+      const context = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const audioAnalyser = context.createAnalyser()
       
       // Analiz ayarları
-      analyserRef.current.fftSize = 256
-      analyserRef.current.smoothingTimeConstant = 0.8
+      audioAnalyser.fftSize = 256
+      audioAnalyser.smoothingTimeConstant = 0.8
       
       // Mikrofon kaynağını bağla
-      const source = audioContextRef.current.createMediaStreamSource(stream)
-      source.connect(analyserRef.current)
+      const source = context.createMediaStreamSource(stream)
+      source.connect(audioAnalyser)
       
+      setAudioContext(context)
+      setAnalyser(audioAnalyser)
       setIsActive(true)
-      drawVisualizer()
+      
+      // Canvas üzerinde görselleştirmeyi başlat
+      renderCanvas(audioAnalyser)
+      
     } catch (error) {
-      console.error('Error accessing microphone:', error)
+      console.error('Mikrofon erişimi hatası:', error)
       alert('Mikrofon erişimi sağlanamadı. Lütfen mikrofon izinlerini kontrol edin.')
     }
   }
 
-  const drawVisualizer = () => {
-    if (!canvasRef.current || !analyserRef.current) return
+  // Canvas'a çizim yapma
+  const renderCanvas = (audioAnalyser: AnalyserNode) => {
+    if (!canvasRef.current) return
     
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     
-    // Canvas'ı pencere boyutuna ayarla
+    // Canvas boyutunu ayarla
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     
-    const analyser = analyserRef.current
-    const bufferLength = analyser.frequencyBinCount
+    const bufferLength = audioAnalyser.frequencyBinCount
     const dataArray = new Uint8Array(bufferLength)
-    
     const barWidth = (canvas.width / bufferLength) * 2.5
     
-    const renderFrame = () => {
-      animationRef.current = requestAnimationFrame(renderFrame)
+    const draw = () => {
+      const id = requestAnimationFrame(draw)
+      setAnimationId(id)
       
-      analyser.getByteFrequencyData(dataArray)
+      audioAnalyser.getByteFrequencyData(dataArray)
       
-      // Arkaplanı temizle - transparant
+      // Ekranı temizle
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       
       let x = 0
       
-      // Renk geçişli barlar çiz
+      // Frequency barlarını çiz
       for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * canvas.height * 0.5
+        const barHeight = (dataArray[i] / 255) * canvas.height * 0.7
         
-        // Renk geçişi: kırmızı -> turuncu -> sarı
+        // Kırmızı-sarı gradyan
         const r = 255
         const g = Math.floor((i / bufferLength) * 255)
         const b = 0
         
-        // Daha şeffaf renk
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.7)`
-        
-        // Ekran merkezini referans alarak çiz
-        const yPos = canvas.height - barHeight
-        ctx.fillRect(x, yPos, barWidth, barHeight)
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.6)`
+        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight)
         
         x += barWidth + 1
       }
     }
     
-    renderFrame()
-    
-    // Pencere boyutu değiştiğinde canvas boyutunu ayarla
-    const handleResize = () => {
-      if (canvasRef.current) {
-        canvasRef.current.width = window.innerWidth
-        canvasRef.current.height = window.innerHeight
-      }
-    }
-    
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    draw()
   }
 
+  // Görselleştirmeyi durdur
   const stopVisualization = () => {
-    if (audioContextRef.current) {
-      audioContextRef.current.close()
-      audioContextRef.current = null
+    if (audioContext) {
+      audioContext.close()
+      setAudioContext(null)
     }
     
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current)
-      animationRef.current = null
+    if (animationId !== null) {
+      cancelAnimationFrame(animationId)
     }
     
     setIsActive(false)
   }
+
+  // Component temizliği
+  useEffect(() => {
+    return () => {
+      if (audioContext) {
+        audioContext.close()
+      }
+      if (animationId !== null) {
+        cancelAnimationFrame(animationId)
+      }
+    }
+  }, [audioContext, animationId])
 
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none">
@@ -127,27 +120,23 @@ export default function AudioVisualizer() {
         className="w-full h-full"
       />
       
-      {!isActive && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-10">
+        {!isActive ? (
           <button 
             onClick={startVisualization}
-            className="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 transition-colors"
+            className="bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-colors"
           >
-            Mikrofonu Etkinleştir
+            Görselleştirmeyi Başlat
           </button>
-        </div>
-      )}
-      
-      {isActive && (
-        <div className="absolute top-4 right-4 pointer-events-auto">
+        ) : (
           <button 
             onClick={stopVisualization}
-            className="bg-red-600 text-white px-2 py-1 rounded text-sm hover:bg-red-700 transition-colors opacity-50 hover:opacity-100"
+            className="bg-red-600 text-white px-4 py-2 rounded-full text-sm hover:bg-red-700 transition-colors opacity-50 hover:opacity-100"
           >
-            Visualizer Durdur
+            Görselleştirmeyi Durdur
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
