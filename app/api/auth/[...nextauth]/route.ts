@@ -13,13 +13,23 @@ export const authOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async session({ session, token, user }: { session: any; token: any; user: any }) {
-      // Session işleme kodu
+    async session({ session, token, user }) {
       if (session.user) {
+        // id'yi token veya user'dan al
         session.user.id = token?.sub || user?.id;
+        
+        // Kullanıcının DJ ayarlarını çek
+        const djSettings = await prisma.dJSettings.findUnique({
+          where: { userId: session.user.id }
+        });
+        
+        // Settings'i session'a ekle
+        session.user.settings = djSettings;
       }
       return session;
     },
+    // ...
+  
     async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       // Yönlendirme kodu
       if (url.includes('/signin') || url === baseUrl) {
