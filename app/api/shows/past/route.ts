@@ -4,7 +4,7 @@ import { authOptions } from "../../auth/[...nextauth]/route"
 import prisma from "../../../../src/lib/prisma"
 import { NextResponse } from "next/server"
 
-    h 
+    
 
 export async function GET(request: Request) {
   try {
