@@ -16,11 +16,10 @@ export async function GET(request: Request) {
     
     // Kullanıcının aktif olmayan (tamamlanan) showlarını getir
     const shows = await prisma.show.findMany({
-        where: {
-          userId: session.user.id as string,  // djId yerine userId
-          active: false,
-          endedAt: { not: null }
-        
+      where: {
+        userId: session.user.id as string, // veya userId, modelinize uygun olan
+        active: false,
+        endedAt: { not: null }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -33,8 +32,8 @@ export async function GET(request: Request) {
       });
       
       // Ödemeli mesajların sayısını hesapla
-      const paidMessages = messages.filter(message => message.paid);
-      
+     // Ödemeli mesajların sayısını hesapla
+      const paidMessages = messages.filter(message => message.payment > 0);
       // Toplam kazancı hesapla (her ödemeli mesaj için 10 TL)
       const totalEarnings = paidMessages.length * 10;
       

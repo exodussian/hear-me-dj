@@ -25,7 +25,7 @@ export async function PUT(
       where: { id: showId }
     })
     
-    if (!show || show.djId !== userId) {
+    if (!show || show.userId !== userId) {
       return NextResponse.json({ error: "Not authorized to update this show" }, { status: 403 })
     }
     
@@ -55,7 +55,7 @@ export async function GET(
         messages: {
           orderBy: { createdAt: 'desc' }
         },
-        dj: {
+        user: {
           select: {
             name: true,
             settings: true

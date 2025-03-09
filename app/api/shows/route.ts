@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // Önce aktif showları kapat
     await prisma.show.updateMany({
       where: {
-        userId: userId,  // djId yerine userId kullanın
+        userId: userId,  // userId değil, djId kullanın
         active: true,
       },
       data: {

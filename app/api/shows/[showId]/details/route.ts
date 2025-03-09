@@ -25,7 +25,7 @@ export async function GET(
     }
     
     // Bu show kullanıcıya ait mi kontrol et
-    if (show.djId !== session.user.id) {
+    if (show.userId !== session.user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
     
@@ -36,7 +36,8 @@ export async function GET(
     });
     
     // Ödemeli mesajların sayısını hesapla
-    const paidMessages = messages.filter(message => message.paid);
+    // Ödemeli mesajların sayısını hesapla
+    const paidMessages = messages.filter(message => message.payment > 0);
     
     // Toplam kazancı hesapla
     // Burada her ödeme için sabit bir değer olan 10 TL kullanıyorum

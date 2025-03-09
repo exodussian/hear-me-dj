@@ -250,22 +250,23 @@ export default function ShowStatsDashboard() {
              <div className="space-y-2 max-h-96 overflow-y-auto">
              {selectedShow.messages.map(message => (
                <div 
-                 key={message.id} 
-                 className={`p-3 bg-gray-50 rounded border-l-4 ${message.paid ? 'border-green-500' : 'border-gray-300'}`}
-               >
-                 <div className="flex justify-between">
-                   <p className="font-medium">
-                     {message.displayName}
-                     {message.paid && (
-                       <span className="ml-2 text-sm bg-green-500 text-white px-2 py-1 rounded-full">
-                         Ödendi
-                       </span>
-                     )}
-                   </p>
-                   <p className="text-sm text-gray-500">{formatDate(message.createdAt)}</p>
-                 </div>
-                 <p className="mt-1">{message.content}</p>
+               key={message.id} 
+               className={`p-3 bg-gray-50 rounded border-l-4 ${message.payment > 0 ? 'border-green-500' : 'border-gray-300'}`}
+             >
+               <div className="flex justify-between">
+                 <p className="font-medium">
+                   {message.displayName}
+                   {message.payment > 0 && (
+                     <span className="ml-2 text-sm bg-green-500 text-white px-2 py-1 rounded-full">
+                       {message.payment}₺
+                     </span>
+                   )}
+                 </p>
+                 <p className="text-sm text-gray-500">{formatDate(message.createdAt)}</p>
                </div>
+               <p className="mt-1">{message.content}</p>
+             </div>
+
              ))}
            </div>
             ) : (
