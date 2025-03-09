@@ -303,38 +303,40 @@ export default function StartShowClient() {
       setLoading(false)
     }
   }
-  useEffect(() => {
-    if (showId) {
-      // İlk mesajları al
-      fetchMessages();
-      
-      // Mesajları düzenli aralıklarla kontrol et (polling)
-      const polling = setInterval(() => {
-        fetchMessages();
-      }, 300); // 3 saniyede bir kontrol et
-      
-      return () => clearInterval(polling); // cleanup
-    }
-  }, [showId]);
-  
-  // Mesajları getirme fonksiyonu
-  const fetchMessages = async () => {
-    if (!showId) return;
-    
-    try {
-      const response = await fetch(`/api/shows/${showId}/messages`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data);
-      } else {
-        console.log("Mesajlar alınamadı:", response.status);
-      }
-    } catch (error) {
-      console.error("Mesaj alınırken hata:", error);
-    }
-  };
+  // StartShowClient bileşeninize ekleyin, showId tanımlandıktan hemen sonra
 
+// Canlı mesajları almak için useEffect
+useEffect(() => {
+  if (showId) {
+    // İlk mesajları al
+    fetchMessages();
+    
+    // Mesajları düzenli aralıklarla kontrol et (polling)
+    const polling = setInterval(() => {
+      fetchMessages();
+    }, 3000); // 3 saniyede bir kontrol et
+    
+    return () => clearInterval(polling); // cleanup
+  }
+}, [showId]);
+
+// Mesajları getirme fonksiyonu
+const fetchMessages = async () => {
+  if (!showId) return;
+  
+  try {
+    const response = await fetch(`/api/shows/${showId}/messages`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      setMessages(data);
+    } else {
+      console.log("Mesajlar alınamadı:", response.status);
+    }
+  } catch (error) {
+    console.error("Mesaj alınırken hata:", error);
+  }
+};
 
   const endShow = async () => {
     if (!showId) return
