@@ -3,6 +3,8 @@ import { authOptions } from "../auth/[...nextauth]/route"
 import prisma from "../../../src/lib/prisma"
 import { NextResponse } from "next/server"
 
+
+// app/api/messages/route.ts
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -15,7 +17,6 @@ export async function POST(request: Request) {
         displayName,
         content,
         payment: paid ? 10 : 0, // Ödeme varsa örnek değer
-        paymentId: paymentId // paymentId string tipinde veritabanında var
       }
     });
     
@@ -28,6 +29,8 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
         content,
         payment: 0, // veya ödeme tutarı 
         paid, // veritabanında bu alan varsa
-        paymentId // veritabanında bu alan varsa
+
       }
     });
     
