@@ -81,16 +81,55 @@ export default function StartShowClient() {
     }
   }
 
-  // Show ID değiştiğinde URL'i ayarla ve visualizer'ı başlat
-  useEffect(() => {
-    if (showId) {
-      const baseUrl = window.location.origin
-      setShowUrl(`${baseUrl}/send/${showId}`)
-      
-      // Show başlatıldığında otomatik olarak ses görselleştirmeyi başlat
-      startAudioVisualizer()
-    }
-  }, [showId])
+  /// Show ID değiştiğinde URL'i ayarla ve visualizer'ı başlat
+useEffect(() => {
+  if (showId) {
+    // Yerel IP adresini almak için fonksiyon
+    const getLocalIpAddress = async () => {
+      try {
+        // Public STUN sunucusu kullanarak yerel IP adresi alma
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+        
+        pc.createDataChannel("");
+        await pc.createOffer().then(offer => pc.setLocalDescription(offer));
+        
+        // ICE adaylarını bekle
+        const ip = await new Promise((resolve) => {
+          pc.onicecandidate = (event) => {
+            if (!event.candidate) return;
+            
+            // IP adresini regex ile çıkar
+            const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+            const ipAddress = ipRegex.exec(event.candidate.candidate)?.[1];
+            
+            if (ipAddress) {
+              resolve(ipAddress);
+              pc.onicecandidate = null;
+              pc.close();
+            }
+          };
+        });
+        
+        // Yerel IP üzerinden URL oluştur
+        const localIpUrl = `http://${ip}:3000/send/${showId}`;
+        setShowUrl(localIpUrl);
+        console.log("Local IP URL:", localIpUrl);
+      } catch (error) {
+        console.error("IP adresi alınamadı:", error);
+        // Fallback olarak window.location.origin kullan
+        const baseUrl = window.location.origin;
+        setShowUrl(`${baseUrl}/send/${showId}`);
+      }
+    };
+    
+    getLocalIpAddress();
+    
+    // Show başlatıldığında otomatik olarak ses görselleştirmeyi başlat
+    startAudioVisualizer();
+  }
+}, [showId]);
   
   // Canlı mesajları almak için useEffect
   useEffect(() => {
