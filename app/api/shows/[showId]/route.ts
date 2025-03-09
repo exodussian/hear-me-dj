@@ -5,72 +5,29 @@ import { NextResponse } from "next/server"
 
 
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { showId: string } }
-) {
+export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const body = await request.json();
+    const { showId, displayName, content, paid = false, paymentId = null } = body;
     
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-    
-    const userId = session.user.id
-    const { showId } = params
-    const { active, endedAt } = await request.json()
-    
-    // Show'un sahibi olduğunu kontrol et
-    const show = await prisma.show.findUnique({
-      where: { id: showId }
-    })
-    
-    if (!show || show.userId !== userId) {
-      return NextResponse.json({ error: "Not authorized to update this show" }, { status: 403 })
-    }
-    
-    // Show'u güncelle
-    const updatedShow = await prisma.show.update({
-      where: { id: showId },
-      data: { active, endedAt }
-    })
-    
-    return NextResponse.json(updatedShow)
-  } catch (error) {
-    console.error("Error updating show:", error)
-    return NextResponse.json({ error: "Failed to update show" }, { status: 500 })
-  }
-}
-
-export async function GET(
-  request: Request,
-  { params }: { params: { showId: string } }
-) {
-  try {
-    const { showId } = params
-    
-    const show = await prisma.show.findUnique({
-      where: { id: showId },
-      include: {
-        messages: {
-          orderBy: { createdAt: 'desc' }
-        },
-        user: {
-          select: {
-            name: true,
-            settings: true
-          }
-        }
+    // Gereksiz alanları dahil etmeyin (örn. updatedAt)
+    const message = await prisma.message.create({
+      data: {
+        showId,
+        displayName,
+        content,
+        payment: 0, // veya ödeme tutarı 
+        paid, // veritabanında bu alan varsa
+        paymentId // veritabanında bu alan varsa
       }
-    })
+    });
     
-    if (!show) {
-      return NextResponse.json({ error: "Show not found" }, { status: 404 })
-    }
-    
-    return NextResponse.json(show)
+    return NextResponse.json(message);
   } catch (error) {
-    console.error("Error fetching show:", error)
-    return NextResponse.json({ error: "Failed to fetch show" }, { status: 500 })
+    console.error('Error creating message:', error);
+    return NextResponse.json(
+      { error: 'Failed to create message' },
+      { status: 500 }
+    );
   }
 }

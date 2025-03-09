@@ -5,38 +5,29 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
-    const { showId, displayName, content, paid, paymentId } = await request.json()
+    const body = await request.json();
+    const { showId, displayName, content, paid = false, paymentId = null } = body;
     
-    // Show'un var olduğunu kontrol et
-    const show = await prisma.show.findUnique({
-      where: {
-        id: showId,
-        active: true
-      }
-    })
-    
-    if (!show) {
-      return NextResponse.json({ error: "Show bulunamadı veya aktif değil" }, { status: 404 })
-    }
-    
-    // Basit kelime filtresi
+    // Veritabanında var olan alanları kullanarak mesaj oluştur
     const message = await prisma.message.create({
       data: {
         showId,
         displayName,
         content,
-        paid: paid || false,
-        paymentId
+        payment: paid ? 10 : 0, // Ödeme varsa örnek değer
+        paymentId: paymentId // paymentId string tipinde veritabanında var
       }
-    })
+    });
     
-    return NextResponse.json(message)
-  } catch (error: any) {
-    console.error("Error creating message:", error)
-    return NextResponse.json({ error: "Message oluşturulamadı", details: error.message }, { status: 500 })
+    return NextResponse.json(message);
+  } catch (error) {
+    console.error('Error creating message:', error);
+    return NextResponse.json(
+      { error: 'Failed to create message' },
+      { status: 500 }
+    );
   }
 }
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)

@@ -69,6 +69,8 @@ model Message {
   showId      String
   show        Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+  paid        Boolean
+  paymentId   String
 
 }
 
