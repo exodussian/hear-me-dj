@@ -479,29 +479,28 @@ export default function StartShowClient() {
           </div>
         )}
         
-        {/* Mesajlar kısmı - son gelen en üstte, tek satırda ve daha büyük yazı */}
         {showActive && (
-          <div className="px-6 pt-4 pb-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-            {messages.length > 0 ? (
-              <div className="space-y-4">
-                {messages.map((msg: { id: string; displayName: string; content: string }, index) => (
-                  <div 
-                    key={msg.id} 
-                    className={`p-4 border-l-4 border-red-500/50 rounded ${msg.id === lastMessageId ? 'animate-pulse scale-105' : ''}`}
-                    style={{
-                      backgroundColor: msg.id === lastMessageId ? 'rgba(255, 255, 0, 0.1)' : 'transparent',
-                      borderColor: msg.id === lastMessageId ? 'rgba(255, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)'
-                    }}
-                  >
-                    <p className="font-bold text-white text-xl">{msg.displayName}:</p>
-                    <p className="text-gray-200 text-lg">{msg.content}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-center text-xl">Henüz mesaj yok...</p>
-            )}
-          </div>
+         <div className="px-6 pt-4 pb-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+         {messages.length > 0 ? (
+           <div className="space-y-2"> {/* space-y-4 yerine space-y-2 */}
+             {messages.map((msg: { id: string; displayName: string; content: string }, index) => (
+               <div 
+                 key={msg.id} 
+                 className="p-4 border-l-4 border-red-500/50 rounded flex items-center"
+               >
+                 <p className="font-bold text-white text-3xl mr-3">{msg.displayName}:</p> 
+                 <p 
+                   className={`text-2xl ${msg.id === lastMessageId ? 'text-yellow-300' : 'text-gray-200'}`}
+                 >
+                   {msg.content}
+                 </p>
+               </div>
+             ))}
+           </div>
+         ) : (
+           <p className="text-gray-400 text-center text-xl">Henüz mesaj yok...</p>
+         )}
+       </div>
         )}
         
         {/* Show başlamamışsa QR kod yerinde ne görünsün */}
