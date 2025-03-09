@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 
 export default function StartShowClient() {
+  // Tüm state ve ref hook'ları önce gelir
   const { data: session, status } = useSession()
   const [showActive, setShowActive] = useState(false)
   const [showId, setShowId] = useState("")
   const [loading, setLoading] = useState(false)
   const [showUrl, setShowUrl] = useState("")
   const [messages, setMessages] = useState<any[]>([])
+  const [lastMessageId, setLastMessageId] = useState<string | null>(null)
   
   // Audio Visualizer için state ve ref'ler
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -20,16 +22,36 @@ export default function StartShowClient() {
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    if (showId) {
-      const baseUrl = window.location.origin
-      setShowUrl(`${baseUrl}/send/${showId}`)
+  // Mesajları getirme fonksiyonu
+  const fetchMessages = async () => {
+    if (!showId) return;
+    
+    try {
+      const response = await fetch(`/api/shows/${showId}/messages`);
       
-      // Show başlatıldığında otomatik olarak ses görselleştirmeyi başlat
-      startAudioVisualizer()
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          // Mesajları en son gelen en üstte olacak şekilde sırala
+          const sortedMessages = [...data].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          
+          // Eğer yeni bir mesaj geldiyse, son mesaj ID'sini güncelle
+          if (sortedMessages.length > 0 && (!lastMessageId || sortedMessages[0].id !== lastMessageId)) {
+            setLastMessageId(sortedMessages[0].id);
+          }
+          
+          setMessages(sortedMessages);
+        }
+      } else {
+        console.log("Mesajlar alınamadı:", response.status);
+      }
+    } catch (error) {
+      console.error("Mesaj alınırken hata:", error);
     }
-  }, [showId])
-  
+  };
+
   // Mikrofon erişimi ve görselleştirmeyi başlat
   const startAudioVisualizer = async () => {
     if (audioVisualizerActive) return // Zaten aktifse tekrar başlatma
@@ -58,6 +80,32 @@ export default function StartShowClient() {
       alert("Mikrofon erişimi sağlanamadı. Lütfen izinleri kontrol edin.")
     }
   }
+
+  // Show ID değiştiğinde URL'i ayarla ve visualizer'ı başlat
+  useEffect(() => {
+    if (showId) {
+      const baseUrl = window.location.origin
+      setShowUrl(`${baseUrl}/send/${showId}`)
+      
+      // Show başlatıldığında otomatik olarak ses görselleştirmeyi başlat
+      startAudioVisualizer()
+    }
+  }, [showId])
+  
+  // Canlı mesajları almak için useEffect
+  useEffect(() => {
+    if (showId) {
+      // İlk mesajları al
+      fetchMessages();
+      
+      // Mesajları düzenli aralıklarla kontrol et (polling)
+      const polling = setInterval(() => {
+        fetchMessages();
+      }, 3000); // 3 saniyede bir kontrol et
+      
+      return () => clearInterval(polling); // cleanup
+    }
+  }, [showId]);
   
   // Görselleştirme aktif olduğunda canvas'a çizim yap
   useEffect(() => {
@@ -87,16 +135,25 @@ export default function StartShowClient() {
     let hueRotation = 0
     
     class Particle {
-      x: number
-      y: number
-      size: number
-      speedX: number
-      speedY: number
-      color: string
-      intensity: number
+      x: number;
+      y: number;
+      size: number;
+      speedX: number;
+      speedY: number;
+      color: string;
+      intensity: number;
       
       constructor() {
-        this.reset(0)
+        // Tüm değişkenleri constructor'da başlatıyoruz
+        this.x = 0;
+        this.y = 0;
+        this.size = 0;
+        this.speedX = 0;
+        this.speedY = 0;
+        this.color = '';
+        this.intensity = 0;
+        
+        this.reset(0);
       }
       
       reset(intensity: number) {
@@ -107,6 +164,8 @@ export default function StartShowClient() {
         this.speedY = -Math.random() * 6 - 3 - intensity * 5
         this.color = `hsl(${Math.random() * 60 + hueRotation}, 100%, ${50 + intensity * 50}%)`
         this.intensity = intensity
+        
+        return this;
       }
       
       update(intensity: number) {
@@ -121,6 +180,8 @@ export default function StartShowClient() {
       }
       
       draw() {
+        if (!ctx) return;
+        
         ctx.fillStyle = this.color
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
@@ -143,6 +204,8 @@ export default function StartShowClient() {
     const wavePoints: {x: number, y: number, size: number, opacity: number}[] = []
     
     const draw = () => {
+      if (!ctx) return;
+      
       animationFrameRef.current = requestAnimationFrame(draw)
       
       // Frekans verilerini al
@@ -257,24 +320,6 @@ export default function StartShowClient() {
     }
   }, [audioContext])
 
-  if (status === 'loading') {
-    return <div className="container mx-auto px-4 py-8">Yükleniyor...</div>
-  }
-
-  if (!session) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <p>Bu sayfayı görüntülemek için giriş yapmalısınız.</p>
-        <Link 
-          href="/api/auth/signin/google"
-          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded inline-block"
-        >
-          Giriş Yap
-        </Link>
-      </div>
-    )
-  }
-
   const startShow = async () => {
     setLoading(true)
     try {
@@ -303,40 +348,6 @@ export default function StartShowClient() {
       setLoading(false)
     }
   }
-  // StartShowClient bileşeninize ekleyin, showId tanımlandıktan hemen sonra
-
-// Canlı mesajları almak için useEffect
-useEffect(() => {
-  if (showId) {
-    // İlk mesajları al
-    fetchMessages();
-    
-    // Mesajları düzenli aralıklarla kontrol et (polling)
-    const polling = setInterval(() => {
-      fetchMessages();
-    }, 3000); // 3 saniyede bir kontrol et
-    
-    return () => clearInterval(polling); // cleanup
-  }
-}, [showId]);
-
-// Mesajları getirme fonksiyonu
-const fetchMessages = async () => {
-  if (!showId) return;
-  
-  try {
-    const response = await fetch(`/api/shows/${showId}/messages`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      setMessages(data);
-    } else {
-      console.log("Mesajlar alınamadı:", response.status);
-    }
-  } catch (error) {
-    console.error("Mesaj alınırken hata:", error);
-  }
-};
 
   const endShow = async () => {
     if (!showId) return
@@ -388,21 +399,39 @@ const fetchMessages = async () => {
     }
   }
 
+  if (status === 'loading') {
+    return <div className="fixed inset-0 w-screen h-screen flex items-center justify-center">Yükleniyor...</div>
+  }
+
+  if (!session) {
+    return (
+      <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center">
+        <p>Bu sayfayı görüntülemek için giriş yapmalısınız.</p>
+        <Link 
+          href="/api/auth/signin/google"
+          className="mt-4 bg-purple-600 text-white px-4 py-2 rounded inline-block"
+        >
+          Giriş Yap
+        </Link>
+      </div>
+    )
+  }
+
   return (
-    <div className="w-screen fixed inset-0 m-0 p-0 overflow-hidden">
+    // Ana container - ekranın tamamını kaplamak için özel sınıflar
+    <div className="fixed inset-0 w-screen h-screen overflow-hidden m-0 p-0">
       {/* Arka plan canvas - tüm ekranı kaplar */}
       <canvas 
         ref={canvasRef}
-        className="fixed inset-0 w-full h-full z-0"
+        className="absolute inset-0 w-full h-full z-0"
         style={{ pointerEvents: 'none' }}
       />
       
-      {/* Sayfa içeriği */}
-      <div className="container mx-auto px-4 py-8 relative">
-        <div className="flex justify-between items-center mb-8 z-10 relative">
-          {/* Başlık sol üstte */}
+      {/* Sayfa içeriği - ana layout'u override etmek için özel stil */}
+      <div className="fixed inset-0 w-full h-full p-0 z-10">
+        {/* Header - sol başlık, sağ geri dön butonu */}
+        <div className="flex justify-between items-center px-6 py-4">
           <h1 className="text-3xl font-bold text-white">Show Yönetimi</h1>
-          {/* Geri Dön sağ üstte */}
           <Link 
             href="/dashboard"
             className="text-white px-4 py-2 rounded hover:text-gray-300 transition-all"
@@ -411,69 +440,76 @@ const fetchMessages = async () => {
           </Link>
         </div>
         
-        {/* Mesajlar kısmı başlık kaldırıldı */}
+        {/* Kontrol ve QR kod bölümü - tek satırda yerleşim */}
         {showActive && (
-          <div className="mb-8 z-10 relative">
-            <div className="space-y-4">
-              {messages.length > 0 ? (
-                messages.map((msg: { id: string; displayName: string; content: string }) => (
-                  <div key={msg.id} className="p-3 border-l-4 border-red-500/50 rounded">
-                    <p className="font-bold text-white">{msg.displayName}:</p>
-                    <p className="text-gray-200">{msg.content}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-400">Henüz mesaj yok...</p>
-              )}
+          <div className="flex flex-row justify-between items-center px-6 py-4">
+            {/* Sol panel - Show Kontrolü - Sadece sonlandır butonu */}
+            <div className="w-1/3">
+              <button
+                onClick={endShow}
+                disabled={loading}
+                className={`w-full bg-red-600 text-white px-6 py-4 rounded-full text-lg
+                          font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {loading ? "Sonlandırılıyor..." : "SONLANDIR"}
+              </button>
+            </div>
+            
+            {/* Sağ panel - QR Kod */}
+            <div className="text-center w-2/3">
+              <h2 className="text-2xl font-semibold mb-4 text-white">Scan Me to Message Me!</h2>
+              <div className="bg-white p-6 inline-block rounded-lg mb-4 shadow-lg">
+                <QRCodeSVG value={showUrl} size={450} />
+              </div>
             </div>
           </div>
         )}
         
-        <div className="grid md:grid-cols-2 gap-8 z-10 relative">
-          {/* Sol panel - Show Kontrolü - Sadece sonlandır butonu */}
-          <div>
-            {!showActive ? (
-              <button
-                onClick={startShow}
-                disabled={loading}
-                className={`w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-full
-                          font-semibold hover:opacity-90 transition-opacity ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {loading ? "Başlatılıyor..." : "Show Başlat"}
-              </button>
-            ) : (
+        {/* Show başlatma butonu - show aktif değilse */}
+        {!showActive && (
+          <div className="flex justify-center px-6 py-4">
+            <button
+              onClick={startShow}
+              disabled={loading}
+              className={`w-1/3 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-full
+                        font-semibold hover:opacity-90 transition-opacity ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {loading ? "Başlatılıyor..." : "Show Başlat"}
+            </button>
+          </div>
+        )}
+        
+        {/* Mesajlar kısmı - son gelen en üstte, tek satırda ve daha büyük yazı */}
+        {showActive && (
+          <div className="px-6 pt-4 pb-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            {messages.length > 0 ? (
               <div className="space-y-4">
-                {/* Sadece sonlandır butonu */}
-                <button
-                  onClick={endShow}
-                  disabled={loading}
-                  className={`w-full bg-red-600 text-white px-6 py-4 rounded-full text-lg
-                            font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {loading ? "Sonlandırılıyor..." : "SONLANDIR"}
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {/* Sağ panel - QR Kod - daha da büyütüldü ve yazı değiştirildi */}
-          <div className="text-center">
-            {showActive ? (
-              <div>
-                <h2 className="text-2xl font-semibold mb-4 text-white">Scan Me to Message Me!</h2>
-                {/* QR Kodu daha büyük boyutta gösterme */}
-                <div className="bg-white p-6 inline-block rounded-lg mb-4 shadow-lg">
-                  <QRCodeSVG value={showUrl} size={450} />
-                </div>
-                {/* Alt yazı kaldırıldı */}
+                {messages.map((msg: { id: string; displayName: string; content: string }, index) => (
+                  <div 
+                    key={msg.id} 
+                    className={`p-4 border-l-4 border-red-500/50 rounded ${msg.id === lastMessageId ? 'animate-pulse scale-105' : ''}`}
+                    style={{
+                      backgroundColor: msg.id === lastMessageId ? 'rgba(255, 255, 0, 0.1)' : 'transparent',
+                      borderColor: msg.id === lastMessageId ? 'rgba(255, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)'
+                    }}
+                  >
+                    <p className="font-bold text-white text-xl">{msg.displayName}:</p>
+                    <p className="text-gray-200 text-lg">{msg.content}</p>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-gray-400">Show başlattığınızda burada QR kod görünecek</p>
-              </div>
+              <p className="text-gray-400 text-center text-xl">Henüz mesaj yok...</p>
             )}
           </div>
-        </div>
+        )}
+        
+        {/* Show başlamamışsa QR kod yerinde ne görünsün */}
+        {!showActive && (
+          <div className="flex h-64 items-center justify-center">
+            <p className="text-gray-400 text-xl">Show başlattığınızda burada QR kod görünecek</p>
+          </div>
+        )}
       </div>
     </div>
   )
