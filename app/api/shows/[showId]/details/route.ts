@@ -25,7 +25,7 @@ export async function GET(
     }
     
     // Bu show kullanıcıya ait mi kontrol et
-    if (show.userId !== session.user.id) {
+    if (show.djId !== session.user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
     
@@ -35,10 +35,13 @@ export async function GET(
       orderBy: { createdAt: 'desc' }
     });
     
-    // Manuel olarak toplam ödemeyi hesapla
-    const totalPayment = messages.reduce((sum, message) => {
-      return sum + (message.payment || 0);
-    }, 0);
+    // Ödemeli mesajların sayısını hesapla
+    const paidMessages = messages.filter(message => message.paid);
+    
+    // Toplam kazancı hesapla
+    // Burada her ödeme için sabit bir değer olan 10 TL kullanıyorum
+    // Gerçek uygulamanızda bu değer farklı veya dinamik olabilir
+    const totalEarnings = paidMessages.length * 10;
     
     // Show detaylarını formatla
     const showDetails = {
@@ -47,7 +50,8 @@ export async function GET(
       createdAt: show.createdAt,
       endedAt: show.endedAt,
       messageCount: messages.length,
-      totalEarnings: totalPayment,
+      paidMessageCount: paidMessages.length,
+      totalEarnings: totalEarnings,
       messages: messages
     };
     

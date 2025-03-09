@@ -1,9 +1,10 @@
 
-
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../../auth/[...nextauth]/route"
 import prisma from "../../../../src/lib/prisma"
 import { NextResponse } from "next/server"
+
+    h 
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
     // Kullanıcının aktif olmayan (tamamlanan) showlarını getir
     const shows = await prisma.show.findMany({
       where: {
-        userId: session.user.id as string,
+        djId: session.user.id as string, // userId yerine djId kullan
         active: false,
         endedAt: { not: null }
       },
@@ -30,10 +31,11 @@ export async function GET(request: Request) {
         where: { showId: show.id }
       });
       
-      // Manuel olarak toplam ödemeyi hesapla
-      const totalPayment = messages.reduce((sum, message) => {
-        return sum + (message.payment || 0);
-      }, 0);
+      // Ödemeli mesajların sayısını hesapla
+      const paidMessages = messages.filter(message => message.paid);
+      
+      // Toplam kazancı hesapla (her ödemeli mesaj için 10 TL)
+      const totalEarnings = paidMessages.length * 10;
       
       return {
         id: show.id,
@@ -41,7 +43,8 @@ export async function GET(request: Request) {
         createdAt: show.createdAt,
         endedAt: show.endedAt,
         messageCount: messages.length,
-        totalEarnings: totalPayment
+        paidMessageCount: paidMessages.length,
+        totalEarnings: totalEarnings
       };
     }));
     
