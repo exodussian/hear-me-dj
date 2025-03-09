@@ -1,142 +1,129 @@
 "use client"
 
-import { useRef, useEffect, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react';
 
 export default function AudioVisualizer() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isActive, setIsActive] = useState(false)
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null)
-  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
-  const [animationId, setAnimationId] = useState<number | null>(null)
-
-  // Mikrofon erişimi ve görselleştirmeyi başlat
-  const startVisualization = async () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [isVisualizerActive, setIsVisualizerActive] = useState(false);
+  
+  // Mikrofon erişimi isteme ve görselleştirmeyi başlatma
+  const handleStartClick = async () => {
     try {
-      // Kullanıcı etkileşiminden sonra mikrofon erişimi talep et
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      console.log("Mikrofon erişimi sağlandı", stream)
+      // Yeni bir AudioContext oluştur
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       
-      // Yeni audio context oluştur
-      const context = new (window.AudioContext || (window as any).webkitAudioContext)()
-      const audioAnalyser = context.createAnalyser()
+      // Mikrofon erişimi iste
+      console.log("Mikrofon erişimi isteniyor...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Mikrofon erişimi sağlandı");
       
-      // Analiz ayarları
-      audioAnalyser.fftSize = 256
-      audioAnalyser.smoothingTimeConstant = 0.8
+      // Analyser oluştur
+      const audioAnalyser = ctx.createAnalyser();
+      audioAnalyser.fftSize = 256;
       
-      // Mikrofon kaynağını bağla
-      const source = context.createMediaStreamSource(stream)
-      source.connect(audioAnalyser)
+      // Mikrofon kaynağını analyser'a bağla
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(audioAnalyser);
       
-      setAudioContext(context)
-      setAnalyser(audioAnalyser)
-      setIsActive(true)
-      
-      // Canvas üzerinde görselleştirmeyi başlat
-      renderCanvas(audioAnalyser)
-      
+      setAudioContext(ctx);
+      setAnalyser(audioAnalyser);
+      setIsVisualizerActive(true);
     } catch (error) {
-      console.error('Mikrofon erişimi hatası:', error)
-      alert('Mikrofon erişimi sağlanamadı. Lütfen mikrofon izinlerini kontrol edin.')
+      console.error("Mikrofon erişim hatası:", error);
+      alert("Mikrofon erişimi sağlanamadı. Lütfen izin verdiğinizden emin olun.");
     }
-  }
-
-  // Canvas'a çizim yapma
-  const renderCanvas = (audioAnalyser: AnalyserNode) => {
-    if (!canvasRef.current) return
+  };
+  
+  // Görselleştirici çalıştığında canvas'a çizim yap
+  useEffect(() => {
+    if (!isVisualizerActive || !analyser || !canvasRef.current) return;
     
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
-    // Canvas boyutunu ayarla
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    // Canvas boyutunu pencerenin boyutuna ayarla
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
     
-    const bufferLength = audioAnalyser.frequencyBinCount
-    const dataArray = new Uint8Array(bufferLength)
-    const barWidth = (canvas.width / bufferLength) * 2.5
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     
+    // Frekans datalarını analiz etmek için dizi oluştur
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    let animationFrame: number;
+    
+    // Ses dalga formunu çiz
     const draw = () => {
-      const id = requestAnimationFrame(draw)
-      setAnimationId(id)
+      animationFrame = requestAnimationFrame(draw);
       
-      audioAnalyser.getByteFrequencyData(dataArray)
+      analyser.getByteFrequencyData(dataArray);
       
-      // Ekranı temizle
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      // Canvas'ı temizle
+      ctx.fillStyle = 'rgb(0, 0, 0)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      let x = 0
+      // Bar genişliği hesapla
+      const barWidth = (canvas.width / bufferLength) * 2.5;
+      let x = 0;
       
-      // Frequency barlarını çiz
+      // Her frekans için bir bar çiz
       for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * canvas.height * 0.7
+        const barHeight = (dataArray[i] / 255) * canvas.height * 0.7;
         
-        // Kırmızı-sarı gradyan
-        const r = 255
-        const g = Math.floor((i / bufferLength) * 255)
-        const b = 0
+        // Kırmızıdan sarıya renk geçişi
+        const r = 255;
+        const g = Math.floor((i / bufferLength) * 255);
+        const b = 0;
         
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.6)`
-        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight)
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
         
-        x += barWidth + 1
+        x += barWidth + 1;
       }
-    }
+    };
     
-    draw()
-  }
-
-  // Görselleştirmeyi durdur
-  const stopVisualization = () => {
-    if (audioContext) {
-      audioContext.close()
-      setAudioContext(null)
-    }
+    draw();
     
-    if (animationId !== null) {
-      cancelAnimationFrame(animationId)
-    }
-    
-    setIsActive(false)
-  }
-
-  // Component temizliği
+    // Temizlik
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      cancelAnimationFrame(animationFrame);
+    };
+  }, [analyser, isVisualizerActive]);
+  
+  // Component unmount olduğunda AudioContext'i kapat
   useEffect(() => {
     return () => {
       if (audioContext) {
-        audioContext.close()
+        audioContext.close();
       }
-      if (animationId !== null) {
-        cancelAnimationFrame(animationId)
-      }
-    }
-  }, [audioContext, animationId])
-
+    };
+  }, [audioContext]);
+  
   return (
-    <div className="fixed inset-0 -z-10 pointer-events-none">
+    <div className="absolute inset-0 -z-10">
       <canvas 
         ref={canvasRef} 
         className="w-full h-full"
       />
       
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-10">
-        {!isActive ? (
-          <button 
-            onClick={startVisualization}
-            className="bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-colors"
+      {!isVisualizerActive && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <button
+            onClick={handleStartClick}
+            className="bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xl px-8 py-4 rounded-lg shadow-lg hover:opacity-90 transition-opacity"
           >
-            Görselleştirmeyi Başlat
+            Ses Görselleştirmeyi Başlat
           </button>
-        ) : (
-          <button 
-            onClick={stopVisualization}
-            className="bg-red-600 text-white px-4 py-2 rounded-full text-sm hover:bg-red-700 transition-colors opacity-50 hover:opacity-100"
-          >
-            Görselleştirmeyi Durdur
-          </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
