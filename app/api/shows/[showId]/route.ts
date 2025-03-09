@@ -8,17 +8,16 @@ import { NextResponse } from "next/server"
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { showId, displayName, content, paid = false, paymentId = null } = body;
+    const { showId, displayName, content, paid = false, paymentId = "" } = body;
     
-    // Gereksiz alanları dahil etmeyin (örn. updatedAt)
+    // Veritabanında var olan alanları kullanarak mesaj oluştur
     const message = await prisma.message.create({
       data: {
-        showId: showId,
-        displayName: displayName,
-        content: content,
-        payment: 0,
-        paid: paid,
-        paymentId: ""
+        showId,
+        displayName,
+        content,
+        paid,
+        paymentId,
       },
     });
     
@@ -31,5 +30,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-//
