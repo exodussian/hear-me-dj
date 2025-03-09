@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "../../auth/[...nextauth]/route"
-import prisma from "../../../../src/lib/prisma"
-import { NextResponse } from "next/server"
+import { authOptions } from "../../../auth/[...nextauth]/route"
+import prisma from "../../../../../src/lib/prisma"
 
+import { NextResponse } from 'next/server';
 
 
 export async function PUT(
