@@ -1,32 +1,32 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../auth/[...nextauth]/route"
 import prisma from "../../../src/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
+import { v4 as uuidv4 } from 'uuid'
 
-// app/api/messages/route.ts
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { showId, displayName, content, paid = false, paymentId = null } = body;
-    
-    // Veritabanında var olan alanları kullanarak mesaj oluştur
+    const { showId, displayName, content, payment = 0 } = await request.json()
+
     const message = await prisma.message.create({
       data: {
         showId,
         displayName,
         content,
-        payment: paid ? 10 : 0, // Ödeme varsa örnek değer
+        payment, // paymentId'yi kaldırın
+        paid: false,
+        // paymentId alanını şimdilik çıkarın
       }
-    });
-    
-    return NextResponse.json(message);
+    })
+
+    return NextResponse.json(message, { status: 201 })
   } catch (error) {
-    console.error('Error creating message:', error);
-    return NextResponse.json(
-      { error: 'Failed to create message' },
-      { status: 500 }
-    );
+    console.error('Message creation error:', error)
+    return NextResponse.json({ 
+      error: 'Mesaj oluşturulurken bir hata oluştu',
+      details: error instanceof Error ? error.message : 'Bilinmeyen hata'
+    }, { status: 500 })
   }
 }
 
