@@ -3,6 +3,7 @@ import { authOptions } from "../../../auth/[...nextauth]/route"
 import prisma from "../../../../../src/lib/prisma"
 import { NextResponse } from "next/server"
 
+
 export async function GET(
   request: Request,
   { params }: { params: { showId: string } }
@@ -15,22 +16,31 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Show'u tüm mesajlarıyla birlikte getir
+    // Show bilgilerini getir
     const show = await prisma.show.findUnique({
-      where: { 
-        id: showId,
-        userId: session.user.id as string 
-      },
-      include: {
-        messages: {
-          orderBy: { createdAt: 'desc' }
-        }
-      }
+      where: { id: showId }
     });
     
     if (!show) {
       return NextResponse.json({ error: 'Show not found' }, { status: 404 });
     }
+    
+    // Bu show kullanıcıya ait mi kontrol et
+    if (show.djId !== session.user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    
+    // Show'a ait mesajları getir
+    const messages = await prisma.message.findMany({
+      where: { showId },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    // Toplam ödeme miktarını hesapla
+    const payments = await prisma.message.aggregate({
+      where: { showId },
+      _sum: { payment: true }
+    });
     
     // Show detaylarını formatla
     const showDetails = {
@@ -38,9 +48,9 @@ export async function GET(
       title: show.title,
       createdAt: show.createdAt,
       endedAt: show.endedAt,
-      messageCount: show.messages.length,
-      totalEarnings: show.totalEarnings || 0,
-      messages: show.messages
+      messageCount: messages.length,
+      totalEarnings: payments._sum.payment || 0,
+      messages: messages
     };
     
     return NextResponse.json(showDetails);
