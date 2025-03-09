@@ -16,10 +16,11 @@ export async function GET(request: Request) {
     
     // Kullanıcının aktif olmayan (tamamlanan) showlarını getir
     const shows = await prisma.show.findMany({
-      where: {
-        djId: session.user.id as string, // userId yerine djId kullan
-        active: false,
-        endedAt: { not: null }
+        where: {
+          userId: session.user.id as string,  // djId yerine userId
+          active: false,
+          endedAt: { not: null }
+        
       },
       orderBy: { createdAt: 'desc' }
     });
