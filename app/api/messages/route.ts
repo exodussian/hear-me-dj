@@ -5,9 +5,9 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
-    const { showId, content, displayName, paid } = await request.json()
+    const { showId, displayName, content, paid, paymentId } = await request.json()
     
-    // Show'un var olduğunu ve aktif olduğunu kontrol et
+    // Show'un var olduğunu kontrol et
     const show = await prisma.show.findUnique({
       where: {
         id: showId,
@@ -16,25 +16,51 @@ export async function POST(request: Request) {
     })
     
     if (!show) {
-      return NextResponse.json({ error: "Show not found or not active" }, { status: 404 })
+      return NextResponse.json({ error: "Show bulunamadı veya aktif değil" }, { status: 404 })
     }
     
-    // Yasaklı kelimeler kontrolü (geliştirilecek)
-    
-    // Mesajı oluştur
+    // Basit kelime filtresi
     const message = await prisma.message.create({
       data: {
         showId,
-        content,
         displayName,
+        content,
         paid: paid || false,
-        emojis: [] // Emoji desteği eklenebilir
+        paymentId
       }
     })
     
     return NextResponse.json(message)
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating message:", error)
-    return NextResponse.json({ error: "Failed to create message" }, { status: 500 })
+    return NextResponse.json({ error: "Message oluşturulamadı", details: error.message }, { status: 500 })
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const showId = searchParams.get('showId')
+    
+    if (!showId) {
+      return NextResponse.json({ error: "showId parametresi gerekli" }, { status: 400 })
+    }
+    
+    // Son 10 mesajı getir
+    const messages = await prisma.message.findMany({
+      where: {
+        showId: showId,
+        paid: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    })
+    
+    return NextResponse.json(messages)
+  } catch (error: any) {
+    console.error("Error fetching messages:", error)
+    return NextResponse.json({ error: "Mesajlar getirilemedi", details: error.message }, { status: 500 })
   }
 }
