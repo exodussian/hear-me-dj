@@ -25,7 +25,7 @@ export default function StartShowClient() {
       const baseUrl = window.location.origin
       setShowUrl(`${baseUrl}/send/${showId}`)
       
-      // Show başlatıldığında otomatik olarak ses görselleştirmeyi de başlat
+      // Show başlatıldığında otomatik olarak ses görselleştirmeyi başlat
       startAudioVisualizer()
     }
   }, [showId])
@@ -41,16 +41,13 @@ export default function StartShowClient() {
       
       const context = new (window.AudioContext || (window as any).webkitAudioContext)()
       const audioAnalyser = context.createAnalyser()
-      audioAnalyser.fftSize = 128 // Daha az detay, daha büyük barlar
-      audioAnalyser.smoothingTimeConstant = 0.5 // Daha akıcı geçişler
+      
+      // Daha detaylı analiz için FFT boyutunu arttırma
+      audioAnalyser.fftSize = 256 // Daha az detay, daha akıcı animasyon için
+      audioAnalyser.smoothingTimeConstant = 0.85
       
       const source = context.createMediaStreamSource(stream)
       source.connect(audioAnalyser)
-      
-      // Test için ses verilerini kontrol et
-      const testBuffer = new Uint8Array(audioAnalyser.frequencyBinCount)
-      audioAnalyser.getByteFrequencyData(testBuffer)
-      console.log("İlk ses verileri:", testBuffer)
       
       setAudioContext(context)
       setAnalyser(audioAnalyser)
@@ -65,68 +62,176 @@ export default function StartShowClient() {
   // Görselleştirme aktif olduğunda canvas'a çizim yap
   useEffect(() => {
     if (!audioVisualizerActive || !analyser || !canvasRef.current) {
-      console.log("Canvas çizimi başlatılamadı:", { 
-        active: audioVisualizerActive, 
-        hasAnalyser: !!analyser, 
-        hasCanvas: !!canvasRef.current 
-      })
       return
     }
     
-    console.log("Canvas çizim başlatılıyor...")
-    
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
     
     // Canvas boyutlarını ayarla
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      console.log("Canvas boyutu:", canvas.width, "x", canvas.height)
     }
     resize()
     window.addEventListener('resize', resize)
     
+    // Frekans verileri için array
     const bufferLength = analyser.frequencyBinCount
     const dataArray = new Uint8Array(bufferLength)
     
-    let frameCount = 0
+    // Parçacık sistemi
+    const particles: Particle[] = []
+    const particleCount = 300
+    let hueRotation = 0
+    
+    class Particle {
+      x: number
+      y: number
+      size: number
+      speedX: number
+      speedY: number
+      color: string
+      intensity: number
+      
+      constructor() {
+        this.reset(0)
+      }
+      
+      reset(intensity: number) {
+        this.x = Math.random() * canvas.width
+        this.y = canvas.height + Math.random() * 100
+        this.size = Math.random() * 5 + 2
+        this.speedX = (Math.random() - 0.5) * 3
+        this.speedY = -Math.random() * 6 - 3 - intensity * 5
+        this.color = `hsl(${Math.random() * 60 + hueRotation}, 100%, ${50 + intensity * 50}%)`
+        this.intensity = intensity
+      }
+      
+      update(intensity: number) {
+        this.x += this.speedX
+        this.y += this.speedY
+        this.speedY += 0.01 - intensity * 0.05
+        this.size -= 0.1
+        
+        if (this.size <= 0.3 || this.y < 0 || this.x < 0 || this.x > canvas.width) {
+          this.reset(intensity)
+        }
+      }
+      
+      draw() {
+        ctx.fillStyle = this.color
+        ctx.beginPath()
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+        ctx.fill()
+        
+        // Parıltı efekti
+        ctx.fillStyle = `rgba(255, 255, 100, ${this.intensity * 0.2})`
+        ctx.beginPath()
+        ctx.arc(this.x, this.y, this.size * 1.5, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+    
+    // Parçacıkları başlat
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle())
+    }
+    
+    // Dalganın oluşturduğu dalga örüntüleri
+    const wavePoints: {x: number, y: number, size: number, opacity: number}[] = []
     
     const draw = () => {
       animationFrameRef.current = requestAnimationFrame(draw)
       
-      // Her frame'de ses verilerini al
+      // Frekans verilerini al
       analyser.getByteFrequencyData(dataArray)
       
-      // Debug için her 60 frame'de bir (yaklaşık 1 saniye) veriyi logla
-      frameCount++
-      if (frameCount % 60 === 0) {
-        console.log("Ses verisi örneği:", dataArray.slice(0, 5))
-        frameCount = 0
+      // Ses seviyesini hesapla
+      let sum = 0
+      for (let i = 0; i < bufferLength; i++) {
+        sum += dataArray[i]
       }
+      const average = sum / bufferLength / 255
       
-      // Canvas'ı tamamen temizle
-      ctx.fillStyle = 'rgb(0, 0, 0)'
+      // Arka planı temizle - Her frame için siyah
+      ctx.fillStyle = 'rgba(0, 0, 0, 1)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       
-      const barWidth = (canvas.width / bufferLength)
+      // Görsel efektlerin renk hue'sunu yavaşça değiştir
+      hueRotation = (hueRotation + 0.2) % 360
+      
+      // Parçacıkları güncelle ve çiz
+      particles.forEach(particle => {
+        particle.update(average)
+        particle.draw()
+      })
+      
+      // Merkezi dalga efekti - Ana ses dalgası
+      ctx.strokeStyle = `hsl(${hueRotation}, 100%, 70%)`
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      
+      const sliceWidth = canvas.width / bufferLength
       let x = 0
       
       for (let i = 0; i < bufferLength; i++) {
-        // Daha yüksek barlar için çarpan kullan
-        const barHeight = dataArray[i] * 2
+        const v = dataArray[i] / 128.0
+        const y = canvas.height / 2 + (v - 1) * canvas.height / 4
         
-        // Kırmızıdan-sarıya renk gradyanı
-        const r = 255
-        const g = Math.min(255, Math.floor((i / bufferLength) * 510))
-        const b = 0
+        // Dalga noktalarını kaydet - ilerleyen animasyonlar için
+        if (i % 8 === 0 && Math.random() > 0.5) {
+          wavePoints.push({
+            x: x,
+            y: y,
+            size: v * 5,
+            opacity: 1
+          })
+        }
         
-        // Bar çizimi
-        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
-        ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight)
+        if (i === 0) {
+          ctx.moveTo(x, y)
+        } else {
+          ctx.lineTo(x, y)
+        }
         
-        x += barWidth
+        x += sliceWidth
+      }
+      
+      ctx.stroke()
+      
+      // Dalga noktalarından çıkan enerji dalgaları
+      ctx.lineWidth = 1
+      wavePoints.forEach((point, i) => {
+        point.size += 5
+        point.opacity -= 0.02
+        
+        ctx.beginPath()
+        ctx.strokeStyle = `hsla(${hueRotation + 30}, 100%, 70%, ${point.opacity})`
+        ctx.arc(point.x, point.y, point.size, 0, Math.PI * 2)
+        ctx.stroke()
+        
+        // Eskimiş noktaları kaldır
+        if (point.opacity <= 0) {
+          wavePoints.splice(i, 1)
+        }
+      })
+      
+      // Bas seslere göre ekrana puls efekti
+      const bassValue = dataArray[0] / 255.0 // En düşük frekans değeri - bas ses
+      if (bassValue > 0.6) {
+        ctx.fillStyle = `rgba(255, 255, 100, ${bassValue * 0.3})`
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
+      
+      // Spektrum çizgilerini oluştur - ekranın altından çıkan dikey çizgiler
+      ctx.fillStyle = `hsl(${hueRotation + 60}, 100%, 50%)`
+      x = 0
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = dataArray[i] * 1.5
+        ctx.fillRect(x, canvas.height - barHeight, sliceWidth - 1, barHeight)
+        x += sliceWidth
       }
     }
     
@@ -137,7 +242,6 @@ export default function StartShowClient() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
-      console.log("Canvas çizimi durduruldu")
     }
   }, [audioVisualizerActive, analyser])
   
@@ -251,7 +355,7 @@ export default function StartShowClient() {
   }
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="w-screen fixed inset-0 m-0 p-0 overflow-hidden">
       {/* Arka plan canvas - tüm ekranı kaplar */}
       <canvas 
         ref={canvasRef}
@@ -262,20 +366,38 @@ export default function StartShowClient() {
       {/* Sayfa içeriği */}
       <div className="container mx-auto px-4 py-8 relative">
         <div className="flex justify-between items-center mb-8 z-10 relative">
+          {/* Başlık sol üstte */}
           <h1 className="text-3xl font-bold text-white">Show Yönetimi</h1>
+          {/* Geri Dön sağ üstte */}
           <Link 
             href="/dashboard"
-            className="bg-black bg-opacity-30 backdrop-blur-sm text-white px-4 py-2 rounded hover:bg-opacity-40 transition-all"
+            className="text-white px-4 py-2 rounded hover:text-gray-300 transition-all"
           >
             Geri Dön
           </Link>
         </div>
         
+        {/* Mesajlar kısmı başlık kaldırıldı */}
+        {showActive && (
+          <div className="mb-8 z-10 relative">
+            <div className="space-y-4">
+              {messages.length > 0 ? (
+                messages.map((msg: { id: string; displayName: string; content: string }) => (
+                  <div key={msg.id} className="p-3 border-l-4 border-red-500/50 rounded">
+                    <p className="font-bold text-white">{msg.displayName}:</p>
+                    <p className="text-gray-200">{msg.content}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400">Henüz mesaj yok...</p>
+              )}
+            </div>
+          </div>
+        )}
+        
         <div className="grid md:grid-cols-2 gap-8 z-10 relative">
-          {/* Sol panel - Kontroller - daha fazla transparan */}
-          <div className="bg-black bg-opacity-30 backdrop-blur-sm p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4 text-white">Show Kontrolü</h2>
-            
+          {/* Sol panel - Show Kontrolü - Sadece sonlandır butonu */}
+          <div>
             {!showActive ? (
               <button
                 onClick={startShow}
@@ -287,35 +409,29 @@ export default function StartShowClient() {
               </button>
             ) : (
               <div className="space-y-4">
-                <div className="bg-green-900/20 border border-green-500/50 text-green-300 p-4 rounded-lg">
-                  <p className="font-semibold">Show şu anda aktif!</p>
-                  <p className="text-sm mt-2">Show ID: {showId}</p>
-                  <p className="text-sm mt-1">Bağlantı: {showUrl}</p>
-                </div>
-                
+                {/* Sadece sonlandır butonu */}
                 <button
                   onClick={endShow}
                   disabled={loading}
-                  className={`w-full bg-red-600 text-white px-6 py-3 rounded-full
+                  className={`w-full bg-red-600 text-white px-6 py-4 rounded-full text-lg
                             font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {loading ? "Sonlandırılıyor..." : "Show'u Sonlandır"}
+                  {loading ? "Sonlandırılıyor..." : "SONLANDIR"}
                 </button>
               </div>
             )}
           </div>
           
-          {/* Sağ panel - QR Kod - opak beyaz arka plan */}
-          <div className="bg-black bg-opacity-30 backdrop-blur-sm p-6 rounded-lg shadow-lg">
+          {/* Sağ panel - QR Kod - daha da büyütüldü ve yazı değiştirildi */}
+          <div className="text-center">
             {showActive ? (
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-4 text-white">Katılım QR Kodu</h2>
-                <div className="bg-white p-4 inline-block rounded-lg mb-4">
-                  <QRCodeSVG value={showUrl} size={200} />
+              <div>
+                <h2 className="text-2xl font-semibold mb-4 text-white">Scan Me to Message Me!</h2>
+                {/* QR Kodu daha büyük boyutta gösterme */}
+                <div className="bg-white p-6 inline-block rounded-lg mb-4 shadow-lg">
+                  <QRCodeSVG value={showUrl} size={450} />
                 </div>
-                <p className="text-sm text-gray-300">
-                  Katılımcılar bu QR kodu okutarak mesaj gönderebilir
-                </p>
+                {/* Alt yazı kaldırıldı */}
               </div>
             ) : (
               <div className="flex h-full items-center justify-center">
@@ -324,25 +440,6 @@ export default function StartShowClient() {
             )}
           </div>
         </div>
-        
-        {/* Alt kısım - Mesajlar - transparan */}
-        {showActive && (
-          <div className="mt-8 bg-black bg-opacity-30 backdrop-blur-sm p-6 rounded-lg shadow-lg z-10 relative">
-            <h2 className="text-2xl font-semibold mb-4 text-white">Canlı Mesajlar</h2>
-            <div className="space-y-4">
-              {messages.length > 0 ? (
-                messages.map((msg: { id: string; displayName: string; content: string }) => (
-                  <div key={msg.id} className="p-3 bg-red-900/20 border-l-4 border-red-500/50 rounded backdrop-blur-sm">
-                    <p className="font-bold text-white">{msg.displayName}:</p>
-                    <p className="text-gray-200">{msg.content}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-400">Henüz mesaj yok...</p>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
