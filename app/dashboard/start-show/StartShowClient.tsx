@@ -429,34 +429,33 @@ export default function StartShowClient() {
       
       {/* Sayfa içeriği - ana layout'u override etmek için özel stil */}
       <div className="fixed inset-0 w-full h-full p-0 z-10">
-        {/* Header - sol başlık, sağ geri dön butonu */}
+        {/* Header - sol başlık, sağ geri dön ve sonlandır butonu */}
         <div className="flex justify-between items-center px-6 py-4">
           <h1 className="text-3xl font-bold text-white">Show Yönetimi</h1>
-          <Link 
-            href="/dashboard"
-            className="text-white px-4 py-2 rounded hover:text-gray-300 transition-all"
-          >
-            Geri Dön
-          </Link>
-        </div>
-        
-        {/* Kontrol ve QR kod bölümü - tek satırda yerleşim */}
-        {showActive && (
-          <div className="flex flex-row justify-between items-center px-6 py-4">
-            {/* Sol panel - Show Kontrolü - Sadece sonlandır butonu */}
-            <div className="w-1/3">
+          <div className="flex items-center gap-4">
+            {showActive && (
               <button
                 onClick={endShow}
                 disabled={loading}
-                className={`w-full bg-red-600 text-white px-6 py-4 rounded-full text-lg
+                className={`bg-red-600 text-white px-4 py-2 rounded-full text-sm
                           font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {loading ? "Sonlandırılıyor..." : "SONLANDIR"}
+                {loading ? "..." : "SONLANDIR"}
               </button>
-            </div>
-            
-            {/* Sağ panel - QR Kod */}
-            <div className="text-center w-2/3">
+            )}
+            <Link 
+              href="/dashboard"
+              className="text-white px-4 py-2 rounded hover:text-gray-300 transition-all"
+            >
+              Geri Dön
+            </Link>
+          </div>
+        </div>
+        
+        {/* QR kod bölümü */}
+        {showActive && (
+          <div className="flex justify-center items-center px-6 py-4">
+            <div className="text-center">
               <h2 className="text-2xl font-semibold mb-4 text-white">Scan Me to Message Me!</h2>
               <div className="bg-white p-6 inline-block rounded-lg mb-4 shadow-lg">
                 <QRCodeSVG value={showUrl} size={450} />
@@ -479,28 +478,27 @@ export default function StartShowClient() {
           </div>
         )}
         
+        {/* Mesajlar kısmı */}
         {showActive && (
-         <div className="px-6 pt-4 pb-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-         {messages.length > 0 ? (
-           <div className="space-y-2"> {/* space-y-4 yerine space-y-2 */}
-             {messages.map((msg: { id: string; displayName: string; content: string }, index) => (
-               <div 
-                 key={msg.id} 
-                 className="p-4 border-l-4 border-red-500/50 rounded flex items-center"
-               >
-                 <p className="font-bold text-white text-3xl mr-3">{msg.displayName}:</p> 
-                 <p 
-                   className={`text-2xl ${msg.id === lastMessageId ? 'text-yellow-300' : 'text-gray-200'}`}
-                 >
-                   {msg.content}
-                 </p>
-               </div>
-             ))}
-           </div>
-         ) : (
-           <p className="text-gray-400 text-center text-xl">Henüz mesaj yok...</p>
-         )}
-       </div>
+          <div className="px-6 pt-4 pb-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            {messages.length > 0 ? (
+              <div className="space-y-2">
+                {messages.map((msg: { id: string; displayName: string; content: string }, index) => (
+                  <div 
+                    key={msg.id} 
+                    className="p-4 border-l-4 border-red-500/50 rounded flex items-center"
+                  >
+                    <p className="font-bold text-white text-5xl mr-3">{msg.displayName}:</p> 
+                    <p className={`text-5xl ${msg.id === lastMessageId ? 'animate-text-pulse' : 'text-gray-200'}`}>
+                        {msg.content}
+                      </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-center text-xl">Henüz mesaj yok...</p>
+            )}
+          </div>
         )}
         
         {/* Show başlamamışsa QR kod yerinde ne görünsün */}

@@ -3,10 +3,16 @@
 @tailwind utilities;
 
 @keyframes textPulse {
-    0% { color: #FFFFFF; }
-    100% { color: #FFFF00; }
+  0% { 
+    color: #FFFFFF; 
+    text-shadow: none;
   }
-  
-  .animate-text-pulse {
-    animation: textPulse 1.5s infinite alternate;
+  100% { 
+    color: #FFFF00; 
+    text-shadow: 0 0 10px rgba(255, 255, 0, 0.7), 0 0 20px rgba(255, 255, 0, 0.5);
   }
+}
+
+.animate-text-pulse {
+  animation: textPulse 0.1s infinite alternate;
+}

@@ -3,13 +3,15 @@
 import { NextResponse } from 'next/server';
 import prisma from "../../../../../src/lib/prisma"
 
+
+
 export async function GET(
   request: Request,
-  context: { params: { showId: string } }
+  { params }: { params: { showId: string } }
 ) {
   try {
-    // params'ı doğrudan kullanmak yerine değişkene atıyoruz 
-    const showId = context.params.showId;
+    // Doğrudan params.showId kullanma
+    const showId = params.showId;
     
     const show = await prisma.show.findUnique({
       where: { id: showId },
@@ -28,7 +30,7 @@ export async function GET(
         showId: showId,
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc', // Yeniden eskiye sıralama
       },
     });
 
