@@ -1,7 +1,7 @@
 // app/api/shows/[showId]/messages/route.ts
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import prisma from "../../../../../src/lib/prisma"
 
 export async function GET(
   request: Request,
