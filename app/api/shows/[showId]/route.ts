@@ -13,13 +13,13 @@ export async function POST(request: Request) {
     // Gereksiz alanları dahil etmeyin (örn. updatedAt)
     const message = await prisma.message.create({
       data: {
-        showId,
-        displayName,
-        content,
-        payment: 0, // veya ödeme tutarı 
-        paid, // veritabanında bu alan varsa
-
-      }
+        showId: showId,
+        displayName: displayName,
+        content: content,
+        payment: 0,
+        paid: paid,
+        paymentId: ""
+      },
     });
     
     return NextResponse.json(message);

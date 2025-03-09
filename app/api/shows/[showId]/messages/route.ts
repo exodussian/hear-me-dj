@@ -10,8 +10,8 @@ export async function GET(
   { params }: { params: { showId: string } }
 ) {
   try {
-    const showId = params.showId;
-    
+    const showId = await params.showId;
+
     const show = await prisma.show.findUnique({
       where: { id: showId },
     });
