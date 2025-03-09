@@ -3,7 +3,6 @@ import { authOptions } from "../../../auth/[...nextauth]/route"
 import prisma from "../../../../../src/lib/prisma"
 import { NextResponse } from "next/server"
 
-
 export async function GET(
   request: Request,
   { params }: { params: { showId: string } }
@@ -26,7 +25,7 @@ export async function GET(
     }
     
     // Bu show kullanıcıya ait mi kontrol et
-    if (show.djId !== session.user.id) {
+    if (show.userId !== session.user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
     
@@ -36,11 +35,10 @@ export async function GET(
       orderBy: { createdAt: 'desc' }
     });
     
-    // Toplam ödeme miktarını hesapla
-    const payments = await prisma.message.aggregate({
-      where: { showId },
-      _sum: { payment: true }
-    });
+    // Manuel olarak toplam ödemeyi hesapla
+    const totalPayment = messages.reduce((sum, message) => {
+      return sum + (message.payment || 0);
+    }, 0);
     
     // Show detaylarını formatla
     const showDetails = {
@@ -49,7 +47,7 @@ export async function GET(
       createdAt: show.createdAt,
       endedAt: show.endedAt,
       messageCount: messages.length,
-      totalEarnings: payments._sum.payment || 0,
+      totalEarnings: totalPayment,
       messages: messages
     };
     
