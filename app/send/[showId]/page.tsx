@@ -1,16 +1,15 @@
 import SendMessageClient from '../[showId]/SendMessageClient'
 import { notFound } from 'next/navigation'
 import prisma from '../../../src/lib/prisma'
-
 export default async function SendMessagePage({ params }: { params: { showId: string } }) {
   // Sunucu tarafında showId kontrolü
   const show = await prisma.show.findUnique({
-    where: { 
+    where: {
       id: params.showId,
       active: true
     },
     include: {
-      dj: {
+      user: {  // dj yerine user kullanıyoruz
         select: {
           name: true,
           settings: true
@@ -20,7 +19,7 @@ export default async function SendMessagePage({ params }: { params: { showId: st
   })
   
   if (!show) {
-    notFound()
+    return notFound()
   }
   
   return <SendMessageClient show={show} />

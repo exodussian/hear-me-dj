@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { Show, User, DJSettings } from '@prisma/client'
 
-type ShowWithDJ = Show & {
-  dj: {
+type ShowWithUser = Show & {
+  user: {
     name: string | null;
     settings: DJSettings | null;
   }
 }
 
-export default function SendMessageClient({ show }: { show: ShowWithDJ }) {
+export default function SendMessageClient({ show }: { show: ShowWithUser }) {
   const [displayName, setDisplayName] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,7 +19,7 @@ export default function SendMessageClient({ show }: { show: ShowWithDJ }) {
   
   // Fiyat hesaplama
   const calculatePrice = () => {
-    const pricePerChar = show.dj.settings?.pricePerChar || 0.1
+    const pricePerChar = show.user.settings?.pricePerChar || 0.1
     return message.length * pricePerChar
   }
   
@@ -75,7 +75,7 @@ export default function SendMessageClient({ show }: { show: ShowWithDJ }) {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white py-8 px-4">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold">{show.dj.name || 'DJ'}</h1>
+          <h1 className="text-3xl font-bold">{show.user.name || 'DJ'}</h1>
           <p className="text-xl mt-2">{show.title}</p>
         </div>
         
@@ -126,7 +126,7 @@ export default function SendMessageClient({ show }: { show: ShowWithDJ }) {
                   <span className="text-xl font-bold">${price.toFixed(2)}</span>
                 </div>
                 <p className="text-sm text-gray-400 mt-1">
-                  Her karakter için ${show.dj.settings?.pricePerChar || 0.1}
+                  Her karakter için ${show.user.settings?.pricePerChar || 0.1}
                 </p>
               </div>
               
