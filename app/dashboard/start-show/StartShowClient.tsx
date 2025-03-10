@@ -15,12 +15,33 @@ export default function StartShowClient() {
   const [messages, setMessages] = useState<any[]>([])
   const [lastMessageId, setLastMessageId] = useState<string | null>(null)
   
+  // Ekran boyutu için state
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800
+  })
+  
   // Audio Visualizer için state ve ref'ler
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [audioVisualizerActive, setAudioVisualizerActive] = useState(false)
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null)
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
+
+  // Ekran boyutu takibi
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      })
+    }
+    
+    window.addEventListener('resize', handleResize)
+    handleResize() // İlk yükleme
+    
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Mesajları getirme fonksiyonu
   const fetchMessages = async () => {
@@ -82,54 +103,54 @@ export default function StartShowClient() {
   }
 
   /// Show ID değiştiğinde URL'i ayarla ve visualizer'ı başlat
-useEffect(() => {
-  if (showId) {
-    // Yerel IP adresini almak için fonksiyon
-    const getLocalIpAddress = async () => {
-      try {
-        // Public STUN sunucusu kullanarak yerel IP adresi alma
-        const pc = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-        });
-        
-        pc.createDataChannel("");
-        await pc.createOffer().then(offer => pc.setLocalDescription(offer));
-        
-        // ICE adaylarını bekle
-        const ip = await new Promise((resolve) => {
-          pc.onicecandidate = (event) => {
-            if (!event.candidate) return;
-            
-            // IP adresini regex ile çıkar
-            const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
-            const ipAddress = ipRegex.exec(event.candidate.candidate)?.[1];
-            
-            if (ipAddress) {
-              resolve(ipAddress);
-              pc.onicecandidate = null;
-              pc.close();
-            }
-          };
-        });
-        
-        // Yerel IP üzerinden URL oluştur
-        const localIpUrl = `http://${ip}:3000/send/${showId}`;
-        setShowUrl(localIpUrl);
-        console.log("Local IP URL:", localIpUrl);
-      } catch (error) {
-        console.error("IP adresi alınamadı:", error);
-        // Fallback olarak window.location.origin kullan
-        const baseUrl = window.location.origin;
-        setShowUrl(`${baseUrl}/send/${showId}`);
-      }
-    };
-    
-    getLocalIpAddress();
-    
-    // Show başlatıldığında otomatik olarak ses görselleştirmeyi başlat
-    startAudioVisualizer();
-  }
-}, [showId]);
+  useEffect(() => {
+    if (showId) {
+      // Yerel IP adresini almak için fonksiyon
+      const getLocalIpAddress = async () => {
+        try {
+          // Public STUN sunucusu kullanarak yerel IP adresi alma
+          const pc = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+          });
+          
+          pc.createDataChannel("");
+          await pc.createOffer().then(offer => pc.setLocalDescription(offer));
+          
+          // ICE adaylarını bekle
+          const ip = await new Promise((resolve) => {
+            pc.onicecandidate = (event) => {
+              if (!event.candidate) return;
+              
+              // IP adresini regex ile çıkar
+              const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+              const ipAddress = ipRegex.exec(event.candidate.candidate)?.[1];
+              
+              if (ipAddress) {
+                resolve(ipAddress);
+                pc.onicecandidate = null;
+                pc.close();
+              }
+            };
+          });
+          
+          // Yerel IP üzerinden URL oluştur
+          const localIpUrl = `https://hear-me-dj-production.up.railway.app/send/${showId}`;
+          setShowUrl(localIpUrl);
+          console.log("Local IP URL:", localIpUrl);
+        } catch (error) {
+          console.error("IP adresi alınamadı:", error);
+          // Fallback olarak window.location.origin kullan
+          const baseUrl = window.location.origin;
+          setShowUrl(`${baseUrl}/send/${showId}`);
+        }
+      };
+      
+      getLocalIpAddress();
+      
+      // Show başlatıldığında otomatik olarak ses görselleştirmeyi başlat
+      startAudioVisualizer();
+    }
+  }, [showId]);
   
   // Canlı mesajları almak için useEffect
   useEffect(() => {
@@ -468,15 +489,15 @@ useEffect(() => {
       
       {/* Sayfa içeriği - ana layout'u override etmek için özel stil */}
       <div className="fixed inset-0 w-full h-full p-0 z-10">
-        {/* Header - sol başlık, sağ geri dön ve sonlandır butonu */}
-        <div className="flex justify-between items-center px-6 py-4">
-          <h1 className="text-3xl font-bold text-white">Show Yönetimi</h1>
-          <div className="flex items-center gap-4">
+        {/* Header - responsive tasarım */}
+        <div className="flex flex-col md:flex-row justify-between items-center px-4 md:px-6 py-3 md:py-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 md:mb-0">Show Yönetimi</h1>
+          <div className="flex items-center gap-2 md:gap-4">
             {showActive && (
               <button
                 onClick={endShow}
                 disabled={loading}
-                className={`bg-red-600 text-white px-4 py-2 rounded-full text-sm
+                className={`bg-red-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm
                           font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? "..." : "SONLANDIR"}
@@ -484,32 +505,36 @@ useEffect(() => {
             )}
             <Link 
               href="/dashboard"
-              className="text-white px-4 py-2 rounded hover:text-gray-300 transition-all"
+              className="text-white px-3 md:px-4 py-1.5 md:py-2 rounded hover:text-gray-300 transition-all text-xs md:text-sm"
             >
               Geri Dön
             </Link>
           </div>
         </div>
         
-        {/* QR kod bölümü */}
+        {/* QR kod bölümü - responsive tasarım */}
         {showActive && (
-          <div className="flex justify-center items-center px-6 py-4">
+          <div className="flex justify-center items-center px-4 py-2 md:px-6 md:py-4">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-4 text-white">Scan Me to Message Me!</h2>
-              <div className="bg-white p-6 inline-block rounded-lg mb-4 shadow-lg">
-                <QRCodeSVG value={showUrl} size={450} />
+              <h2 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4 text-white">Scan Me to Message Me!</h2>
+              <div className="bg-white p-3 md:p-6 inline-block rounded-lg mb-2 md:mb-4 shadow-lg">
+                <QRCodeSVG 
+                  value={showUrl} 
+                  size={windowSize.width < 768 ? Math.min(250, windowSize.width - 80) : 450} 
+                />
               </div>
+              <p className="text-sm md:text-base text-gray-300 break-all px-2">{showUrl}</p>
             </div>
           </div>
         )}
         
-        {/* Show başlatma butonu - show aktif değilse */}
+        {/* Show başlatma butonu - responsive tasarım */}
         {!showActive && (
-          <div className="flex justify-center px-6 py-4">
+          <div className="flex justify-center px-4 md:px-6 py-3 md:py-4">
             <button
               onClick={startShow}
               disabled={loading}
-              className={`w-1/3 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-full
+              className={`w-full md:w-1/3 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-full
                         font-semibold hover:opacity-90 transition-opacity ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {loading ? "Başlatılıyor..." : "Show Başlat"}
@@ -517,33 +542,34 @@ useEffect(() => {
           </div>
         )}
         
-        {/* Mesajlar kısmı */}
+        {/* Mesajlar kısmı - responsive tasarım */}
         {showActive && (
-          <div className="px-6 pt-4 pb-20 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+          <div className="px-4 md:px-6 pt-2 md:pt-4 pb-16 md:pb-20 overflow-y-auto" 
+               style={{ maxHeight: 'calc(100vh - 280px)' }}>
             {messages.length > 0 ? (
               <div className="space-y-2">
                 {messages.map((msg: { id: string; displayName: string; content: string }, index) => (
                   <div 
                     key={msg.id} 
-                    className="p-4 border-l-4 border-red-500/50 rounded flex items-center"
+                    className="p-3 md:p-4 border-l-4 border-red-500/50 rounded flex items-center"
                   >
-                    <p className="font-bold text-white text-5xl mr-3">{msg.displayName}:</p> 
-                    <p className={`text-5xl ${msg.id === lastMessageId ? 'animate-text-pulse' : 'text-gray-200'}`}>
+                    <p className="font-bold text-white text-2xl md:text-5xl mr-2 md:mr-3">{msg.displayName}:</p> 
+                    <p className={`text-xl md:text-5xl ${msg.id === lastMessageId ? 'animate-text-pulse' : 'text-gray-200'}`}>
                         {msg.content}
                       </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-center text-xl">Henüz mesaj yok...</p>
+              <p className="text-gray-400 text-center text-lg md:text-xl">Henüz mesaj yok...</p>
             )}
           </div>
         )}
         
         {/* Show başlamamışsa QR kod yerinde ne görünsün */}
         {!showActive && (
-          <div className="flex h-64 items-center justify-center">
-            <p className="text-gray-400 text-xl">Show başlattığınızda burada QR kod görünecek</p>
+          <div className="flex h-48 md:h-64 items-center justify-center px-4 md:px-0">
+            <p className="text-gray-400 text-lg md:text-xl text-center">Show başlattığınızda burada QR kod görünecek</p>
           </div>
         )}
       </div>
