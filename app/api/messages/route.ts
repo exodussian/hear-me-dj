@@ -5,10 +5,11 @@ import { NextResponse } from "next/server"
 
 
 // app/api/messages/route.ts
+// app/api/messages/route.ts
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { showId, displayName, content, paid = false, paymentId = null } = body;
+    const { showId, displayName, content, paid = false, paymentId = null, amount = 0 } = body;
     
     // Veritabanında var olan alanları kullanarak mesaj oluştur
     const message = await prisma.message.create({
@@ -16,10 +17,9 @@ export async function POST(request: Request) {
         showId,
         displayName,
         content,
-        payment: paid ? 10 : 0, // Ödeme varsa örnek değer
+        payment: paid ? amount : 0, // Frontend'den gelen tutarı kullan
       }
     });
-    
     return NextResponse.json(message);
   } catch (error) {
     console.error('Error creating message:', error);

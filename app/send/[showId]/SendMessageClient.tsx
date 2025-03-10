@@ -100,7 +100,8 @@ const bannedWords = [
             displayName,
             content: message,
             paid: true,
-            paymentId: 'simulated-payment-id'
+            paymentId: 'simulated-payment-id',
+            amount: price // Hesaplanan fiyatı backend'e gönder
           })
         })
         
