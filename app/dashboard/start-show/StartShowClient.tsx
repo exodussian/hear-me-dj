@@ -405,8 +405,8 @@ useEffect(() => {
       });
   
       if (response.ok) {
-        // Görselleştiriciyi durdur
-        if (audioContext) {
+       // Görselleştiriciyi durdur
+        if (audioContext && audioContext.state !== 'closed') {
           audioContext.close();
           setAudioContext(null);
         }

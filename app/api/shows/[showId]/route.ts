@@ -30,9 +30,9 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request, { params }: { params: { showId: string } }) {
-  const showId = params.showId;
-
   try {
+    const { showId } = await params;
+ 
     const updatedShow = await prisma.show.update({
       where: { id: showId },
       data: {
