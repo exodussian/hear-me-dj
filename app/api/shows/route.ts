@@ -7,8 +7,8 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized or user ID missing' }, { status: 401 });
     }
     
     const userId = session.user.id;
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // Önce aktif showları kapat
     await prisma.show.updateMany({
       where: {
-        userId: userId,  // userId değil, djId kullanın
+        userId: userId,
         active: true,
       },
       data: {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const newShow = await prisma.show.create({
       data: {
         title,
-        userId: userId,  // djId yerine userId kullanın
+        userId, // Artık kesinlikle string olacak
         active: true,
       }
     });
