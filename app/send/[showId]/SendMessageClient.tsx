@@ -16,6 +16,30 @@ export default function SendMessageClient({ show }: { show: ShowWithUser }) {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [price, setPrice] = useState(0)
+  const [error, setError] = useState("")
+  
+  // Yasaklı kelimeler listesi - Gerçek uygulamada bu listeyi daha kapsamlı yapabilir veya bir API'den çekebilirsiniz
+ // Yasaklı kelimeler listesi - Gerçek uygulamada bu listeyi daha kapsamlı yapabilir veya bir API'den çekebilirsiniz
+const bannedWords = [
+  // Türkçe yasaklı kelimeler
+  "amcık", "amık", "çük", "göt", "götveren", "kaltağı", "orospu", "pezevenk", "piç", "sik", "siktir", "yarak", "yarrak", "amına", "aq",
+  
+  // İngilizce yasaklı kelimeler
+  "asshole", "bastard", "bitch", "cock", "cunt", "damn", "dick", "fuck", "motherfucker", "piss", "porn", "pussy", "shit", "slut", "whore",
+  
+  // Almanca yasaklı kelimeler
+  "analritter", "arsch", "arschficker", "arschlecker", "arschloch", "bimbo", "bratze", "bumsen", "bonze", "dödel", "fick", "ficken",
+  "flittchen", "fotze", "fratze", "hackfresse", "hure", "hurensohn", "ische", "kackbratze", "kacke", "kacken", "kackwurst", "kampflesbe",
+  "kanake", "kimme", "lümmel", "milf", "möpse", "morgenlatte", "möse", "mufti", "muschi", "nackt", "neger", "nigger", "nippel", "nutte",
+  "onanieren", "orgasmus", "penis", "pimmel", "pimpern", "pinkeln", "pissen", "pisser", "popel", "poppen", "porno", "reudig", "rosette",
+  "schabracke", "schlampe", "scheiße", "scheisser", "schiesser", "schnackeln", "schwanzlutscher", "schwuchtel", "tittchen", "titten",
+  "vögeln", "vollpfosten", "wichse", "wichsen", "wichser"
+]
+  // Metinde yasaklı kelime kontrolü
+  const containsBannedWords = (text: string): boolean => {
+    const lowerText = text.toLowerCase()
+    return bannedWords.some(word => lowerText.includes(word.toLowerCase()))
+  }
   
   // Fiyat hesaplama
   const calculatePrice = () => {
@@ -23,15 +47,41 @@ export default function SendMessageClient({ show }: { show: ShowWithUser }) {
     return message.length * pricePerChar
   }
   
-  // Mesaj değiştiğinde fiyat güncelleme
+  // İsim değiştiğinde kontrol
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value
+    setDisplayName(newName)
+    
+    if (containsBannedWords(newName)) {
+      setError("Lütfen uygunsuz ifadeler içermeyen bir isim kullanın.")
+    } else {
+      setError("")
+    }
+  }
+  
+  // Mesaj değiştiğinde kontrol ve fiyat güncelleme
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value)
+    const newMessage = e.target.value
+    setMessage(newMessage)
     setPrice(calculatePrice())
+    
+    if (containsBannedWords(newMessage)) {
+      setError("Lütfen uygunsuz ifadeler içermeyen bir mesaj yazın.")
+    } else {
+      setError("")
+    }
   }
   
   // Mesaj gönderme
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Gönderim öncesi son kontrol
+    if (containsBannedWords(displayName) || containsBannedWords(message)) {
+      setError("Uygunsuz içerik tespit edildi. Lütfen içeriğinizi düzenleyin.")
+      return
+    }
+    
     setLoading(true)
     
     try {
@@ -59,6 +109,7 @@ export default function SendMessageClient({ show }: { show: ShowWithUser }) {
           setDisplayName('')
           setMessage('')
           setPrice(0)
+          setError("")
         } else {
           alert('Mesaj gönderilirken bir hata oluştu.')
         }
@@ -94,6 +145,12 @@ export default function SendMessageClient({ show }: { show: ShowWithUser }) {
           <div className="bg-slate-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-2xl font-bold mb-6">Mesajını Gönder</h2>
             
+            {error && (
+              <div className="bg-red-900/30 border border-red-500 text-red-300 p-3 rounded mb-4">
+                {error}
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="displayName" className="block mb-1">İsminiz</label>
@@ -101,7 +158,7 @@ export default function SendMessageClient({ show }: { show: ShowWithUser }) {
                   id="displayName"
                   type="text"
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={handleNameChange}
                   className="w-full bg-slate-700 p-3 rounded"
                   placeholder="Görünecek isminiz"
                   required
@@ -132,9 +189,9 @@ export default function SendMessageClient({ show }: { show: ShowWithUser }) {
               
               <button
                 type="submit"
-                disabled={loading || !message || !displayName}
+                disabled={loading || !message || !displayName || error !== ""}
                 className={`w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-3 rounded-lg
-                          font-semibold hover:opacity-90 transition-opacity ${(loading || !message || !displayName) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          font-semibold hover:opacity-90 transition-opacity ${(loading || !message || !displayName || error !== "") ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? "İşleniyor..." : "Mesaj Gönder ve Öde"}
               </button>
