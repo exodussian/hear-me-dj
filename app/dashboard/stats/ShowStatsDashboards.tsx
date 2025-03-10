@@ -43,10 +43,12 @@ export default function ShowStatsDashboard() {
 
   // Geçmiş showları getir
   useEffect(() => {
-    if (session?.user) {
-      fetchPastShows()
-    }
-  }, [session])
+  let isActive = true;
+  if (session?.user && isActive) {
+    fetchPastShows();
+  }
+  return () => { isActive = false; };
+}, [session?.user?.email]); // Daha spesifik bir değişken kullanın
 
   const fetchPastShows = async () => {
     try {
@@ -163,7 +165,7 @@ export default function ShowStatsDashboard() {
         
         <div className="bg-gradient-to-br from-green-500 to-teal-600 p-6 rounded-lg shadow-lg text-white">
           <h3 className="text-xl font-semibold mb-2">Toplam Kazanç</h3>
-          <p className="text-4xl font-bold">₺{totalEarnings.toFixed(2)}</p>
+          <p className="text-4xl font-bold">€{totalEarnings.toFixed(2)}</p>
         </div>
         
         <div className="bg-gradient-to-br from-yellow-500 to-orange-600 p-6 rounded-lg shadow-lg text-white">
@@ -188,7 +190,7 @@ export default function ShowStatsDashboard() {
           <tbody className="divide-y divide-gray-300">
             {pastShows.length > 0 ? (
               pastShows.map(show => (
-                <tr key={show.id} className="hover:bg-gray-100">
+                <tr key={show.id} className="bg-black-100">
                   <td className="py-3 px-4 text-black-800">{show.title}</td>
                   <td className="py-3 px-4 text-black-800">{formatDate(show.createdAt)}</td>
                   <td className="py-3 px-4 text-black-800">{calculateDuration(show.createdAt, show.endedAt)}</td>
@@ -271,7 +273,7 @@ export default function ShowStatsDashboard() {
                 
                       {/* Mesaj Listesi */}
                       <div>
-                        <h3 className="text-lg font-semibold mb-2">Mesajlar</h3>
+                        <h3 className="text-lg font-medium text-black">Mesajlar</h3>
                         {selectedShow.messages.length > 0 ? (
                         <div className="space-y-2 max-h-96 overflow-y-auto">
                           {selectedShow.messages.map(message => (
@@ -279,18 +281,18 @@ export default function ShowStatsDashboard() {
                               key={message.id} 
                               className={`p-3 bg-gray-50 rounded border-l-4 ${message.payment > 0 ? 'border-green-500' : 'border-gray-300'}`}
                             >
-                              <div className="flex bg-gray-50 justify-between">
-                                <p className="font-medium">
+                              <div className="flex justify-between">
+                                <p className="font-medium text-black">
                                   {message.displayName}
                                   {message.payment > 0 && (
                                     <span className="ml-2 text-sm bg-green-500 text-black px-2 py-1 rounded-full">
-                                      {message.payment}₺
+                                      {message.payment}€
                                     </span>
                                   )}
                                 </p>
                                 <p className="text-sm text-gray-500">{formatDate(message.createdAt)}</p>
                               </div>
-                              <p className="mt-1">{message.content}</p>
+                              <p className="mt-1 text-black">{message.content}</p>
                             </div>
                           ))}
                         </div>
