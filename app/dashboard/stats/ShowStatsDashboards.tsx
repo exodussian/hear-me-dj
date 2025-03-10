@@ -286,7 +286,7 @@ export default function ShowStatsDashboard() {
                                   {message.displayName}
                                   {message.payment > 0 && (
                                     <span className="ml-2 text-sm bg-green-500 text-black px-2 py-1 rounded-full">
-                                      {message.payment}€
+                                    €{Number(message.payment).toFixed(2)}
                                     </span>
                                   )}
                                 </p>

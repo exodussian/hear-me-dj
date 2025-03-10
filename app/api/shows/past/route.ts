@@ -35,7 +35,7 @@ export async function GET(request: Request) {
      // Ödemeli mesajların sayısını hesapla
       const paidMessages = messages.filter(message => message.payment > 0);
       // Toplam kazancı hesapla (her ödemeli mesaj için 10 TL)
-      const totalEarnings = paidMessages.length * 10;
+      const totalEarnings = messages.reduce((sum, message) => sum + (Number(message.payment) || 0), 0);
       
       return {
         id: show.id,
