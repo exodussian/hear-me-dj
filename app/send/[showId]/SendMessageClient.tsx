@@ -1,7 +1,7 @@
 "use client"
+
 import { useState } from 'react'
-// SendMessageClient.tsx
-import { Show, User, DJSettings } from "@prisma/client"
+import { Show, User, DJSettings } from '@prisma/client'
 
 type ShowWithUser = Show & {
   user: {

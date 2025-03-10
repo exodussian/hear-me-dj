@@ -67,10 +67,10 @@ model Message {
   displayName String
   payment     Float    @default(0)
   showId      String
-  show        Show?     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  show        Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   paid        Boolean?
-  paymentId   String
+  paymentId   String?
 }
 
 model Show {
