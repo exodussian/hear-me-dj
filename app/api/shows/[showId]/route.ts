@@ -1,9 +1,7 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "../../auth/[...nextauth]/route"
-import prisma from "../../../../src/lib/prisma"
-import { NextResponse } from "next/server"
-
-
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../auth/[...nextauth]/route";
+import prisma from "../../../../src/lib/prisma";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
@@ -28,5 +26,24 @@ export async function POST(request: Request) {
       { error: 'Failed to create message' },
       { status: 500 }
     );
+  }
+}
+
+export async function PUT(request: Request, { params }: { params: { showId: string } }) {
+  const showId = params.showId;
+
+  try {
+    const updatedShow = await prisma.show.update({
+      where: { id: showId },
+      data: {
+        active: false,
+        endedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json(updatedShow);
+  } catch (error) {
+    console.error('Error updating show:', error);
+    return NextResponse.json({ error: 'Failed to update show' }, { status: 500 });
   }
 }

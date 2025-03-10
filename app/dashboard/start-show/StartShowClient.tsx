@@ -389,54 +389,54 @@ useEffect(() => {
   }
 
   const endShow = async () => {
-    if (!showId) return
-    
-    setLoading(true)
+    if (!showId) return;
+  
+    setLoading(true);
     try {
       const response = await fetch(`/api/shows/${showId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           active: false,
-          endedAt: new Date().toISOString()
-        })
-      })
-      
+          endedAt: new Date().toISOString(),
+        }),
+      });
+  
       if (response.ok) {
         // Görselleştiriciyi durdur
         if (audioContext) {
-          audioContext.close()
-          setAudioContext(null)
+          audioContext.close();
+          setAudioContext(null);
         }
         if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current)
+          cancelAnimationFrame(animationFrameRef.current);
         }
-        setAudioVisualizerActive(false)
-        
+        setAudioVisualizerActive(false);
+  
         // Canvas'ı temizle
         if (canvasRef.current) {
-          const ctx = canvasRef.current.getContext('2d')
+          const ctx = canvasRef.current.getContext('2d');
           if (ctx) {
-            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
           }
         }
-        
+  
         // State'i güncelle
-        setShowActive(false)
-        setShowId("")
-        setShowUrl("")
+        setShowActive(false);
+        setShowId('');
+        setShowUrl('');
       } else {
-        alert('Show sonlandırılırken bir hata oluştu.')
+        alert('Show sonlandırılırken bir hata oluştu.');
       }
     } catch (error) {
-      console.error('Error ending show:', error)
-      alert('Show sonlandırılırken bir hata oluştu.')
+      console.error('Error ending show:', error);
+      alert('Show sonlandırılırken bir hata oluştu.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (status === 'loading') {
     return <div className="fixed inset-0 w-screen h-screen flex items-center justify-center">Yükleniyor...</div>
