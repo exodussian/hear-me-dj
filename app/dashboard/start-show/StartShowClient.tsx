@@ -523,7 +523,7 @@ export default function StartShowClient() {
                   size={windowSize.width < 768 ? Math.min(250, windowSize.width - 80) : 450} 
                 />
               </div>
-              <p className="text-sm md:text-base text-gray-300 break-all px-2">{showUrl}</p>
+              
             </div>
           </div>
         )}
