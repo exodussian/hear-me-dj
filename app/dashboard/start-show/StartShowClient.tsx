@@ -167,207 +167,280 @@ export default function StartShowClient() {
     }
   }, [showId]);
   
-  // Görselleştirme aktif olduğunda canvas'a çizim yap
   useEffect(() => {
     if (!audioVisualizerActive || !analyser || !canvasRef.current) {
-      return
+      return;
     }
     
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d', { alpha: false })
-    if (!ctx) return
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return;
     
     // Canvas boyutlarını ayarla
     const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    resize()
-    window.addEventListener('resize', resize)
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
     
     // Frekans verileri için array
-    const bufferLength = analyser.frequencyBinCount
-    const dataArray = new Uint8Array(bufferLength)
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
     
-    // Parçacık sistemi
-    const particles: Particle[] = []
-    const particleCount = 300
-    let hueRotation = 0
+    // Frekans band tanımları - daha az hesaplama için basitleştirilmiş
+    const bands = {
+      bass: { low: 0, high: Math.floor(bufferLength * 0.1) },
+      mid: { low: Math.floor(bufferLength * 0.1), high: Math.floor(bufferLength * 0.5) },
+      treble: { low: Math.floor(bufferLength * 0.5), high: bufferLength }
+    };
     
+    // Parçacık sistemi - basitleştirilmiş sürüm
     class Particle {
-      x: number;
-      y: number;
-      size: number;
-      speedX: number;
-      speedY: number;
-      color: string;
-      intensity: number;
+      x: number = 0;
+      y: number = 0;
+      size: number = 0;
+      speedX: number = 0;
+      speedY: number = 0;
+      color: string = '';
+      life: number = 0;
       
       constructor() {
-        // Tüm değişkenleri constructor'da başlatıyoruz
-        this.x = 0;
-        this.y = 0;
-        this.size = 0;
-        this.speedX = 0;
-        this.speedY = 0;
-        this.color = '';
-        this.intensity = 0;
-        
-        this.reset(0);
+        this.reset();
       }
       
-      reset(intensity: number) {
-        this.x = Math.random() * canvas.width
-        this.y = canvas.height + Math.random() * 100
-        this.size = Math.random() * 5 + 2
-        this.speedX = (Math.random() - 0.5) * 3
-        this.speedY = -Math.random() * 6 - 3 - intensity * 5
-        this.color = `hsl(${Math.random() * 60 + hueRotation}, 100%, ${50 + intensity * 50}%)`
-        this.intensity = intensity
+      reset() {
+        // Ekranın merkezinden yayılan parçacıklar
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 20;
+        
+        this.x = canvas.width / 2 + Math.cos(angle) * distance;
+        this.y = canvas.height / 2 + Math.sin(angle) * distance;
+        this.size = Math.random() * 4 + 2;
+        
+        // Merkezden dışarı doğru hareket
+        this.speedX = Math.cos(angle) * (Math.random() * 2 + 1);
+        this.speedY = Math.sin(angle) * (Math.random() * 2 + 1);
+        
+        // Rastgele renkler
+        const hue = Math.random() * 60 + 180; // Mavi-turkuaz aralığı
+        this.color = `hsl(${hue}, 100%, 50%)`;
+        
+        this.life = 200 + Math.random() * 100;
         
         return this;
       }
       
-      update(intensity: number) {
-        this.x += this.speedX
-        this.y += this.speedY
-        this.speedY += 0.01 - intensity * 0.05
-        this.size -= 0.1
+      update(bassLevel: number) {
+        // Temel hareket
+        this.x += this.speedX;
+        this.y += this.speedY;
         
-        if (this.size <= 0.3 || this.y < 0 || this.x < 0 || this.x > canvas.width) {
-          this.reset(intensity)
+        // Parçacık boyutu müzikle değişsin
+        this.size *= 0.99;
+        this.life -= 1;
+        
+        // Ekran dışına çıkınca veya ömrü bitince sıfırla
+        if (this.life <= 0 || this.size < 0.5 || 
+            this.x < 0 || this.x > canvas.width || 
+            this.y < 0 || this.y > canvas.height) {
+          // Bas seviyesine göre parçacık yenileme oranı
+          if (Math.random() < bassLevel * 0.5 + 0.1) {
+            this.reset();
+          }
         }
       }
       
-      draw() {
-        if (!ctx) return;
+      draw(ctx: CanvasRenderingContext2D, bassLevel: number) {
+        // Alfa değeri parçacığın ömrüne göre değişsin
+        const alpha = Math.min(1, this.life / 100);
         
-        ctx.fillStyle = this.color
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-        ctx.fill()
-        
-        // Parıltı efekti
-        ctx.fillStyle = `rgba(255, 255, 100, ${this.intensity * 0.2})`
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.size * 1.5, 0, Math.PI * 2)
-        ctx.fill()
+        // Basit glow efekti
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * (1 + bassLevel), 0, Math.PI * 2);
+        ctx.fill();
       }
     }
     
-    // Parçacıkları başlat
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle())
+    // Dalga halkası - basitleştirilmiş sürüm
+    class WaveRing {
+      x: number;
+      y: number;
+      radius: number;
+      maxRadius: number;
+      color: string;
+      speed: number;
+      
+      constructor(x: number, y: number, color: string) {
+        this.x = x;
+        this.y = y;
+        this.radius = 10;
+        this.maxRadius = Math.max(canvas.width, canvas.height) * 0.8;
+        this.color = color;
+        this.speed = 3;
+      }
+      
+      update() {
+        this.radius += this.speed;
+        return this.radius < this.maxRadius;
+      }
+      
+      draw(ctx: CanvasRenderingContext2D) {
+        const alpha = Math.max(0, 1 - this.radius / this.maxRadius);
+        
+        ctx.strokeStyle = this.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
     
-    // Dalganın oluşturduğu dalga örüntüleri
-    const wavePoints: {x: number, y: number, size: number, opacity: number}[] = []
+    // Daha az parçacık
+    const particles: Particle[] = [];
+    const particleCount = 150; // 400 yerine 150
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
     
+    // Dalga halkaları
+    const waveRings: WaveRing[] = [];
+    let lastBeatTime = 0;
+    
+    // Çizim fonksiyonu
     const draw = () => {
       if (!ctx) return;
       
-      animationFrameRef.current = requestAnimationFrame(draw)
+      animationFrameRef.current = requestAnimationFrame(draw);
+      
+      // Mevcut zaman
+      const time = Date.now();
       
       // Frekans verilerini al
-      analyser.getByteFrequencyData(dataArray)
+      analyser.getByteFrequencyData(dataArray);
       
-      // Ses seviyesini hesapla
-      let sum = 0
-      for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i]
+      // Bant seviyelerini hesapla - daha az hesaplama
+      let bassSum = 0;
+      let midSum = 0;
+      let trebleSum = 0;
+      
+      for (let i = bands.bass.low; i < bands.bass.high; i++) {
+        bassSum += dataArray[i];
       }
-      const average = sum / bufferLength / 255
       
-      // Arka planı temizle - Her frame için siyah
-      ctx.fillStyle = 'rgba(0, 0, 0, 1)'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      for (let i = bands.mid.low; i < bands.mid.high; i++) {
+        midSum += dataArray[i];
+      }
       
-      // Görsel efektlerin renk hue'sunu yavaşça değiştir
-      hueRotation = (hueRotation + 0.2) % 360
+      for (let i = bands.treble.low; i < bands.treble.high; i++) {
+        trebleSum += dataArray[i];
+      }
       
-      // Parçacıkları güncelle ve çiz
-      particles.forEach(particle => {
-        particle.update(average)
-        particle.draw()
-      })
+      const bassLevel = bassSum / ((bands.bass.high - bands.bass.low) * 255);
+      const midLevel = midSum / ((bands.mid.high - bands.mid.low) * 255);
+      const trebleLevel = trebleSum / ((bands.treble.high - bands.treble.low) * 255);
       
-      // Merkezi dalga efekti - Ana ses dalgası
-      ctx.strokeStyle = `hsl(${hueRotation}, 100%, 70%)`
-      ctx.lineWidth = 3
-      ctx.beginPath()
+      // Bass darbe algılama - basitleştirilmiş
+      const isBeat = bassLevel > 0.6 && time - lastBeatTime > 300;
       
-      const sliceWidth = canvas.width / bufferLength
-      let x = 0
+      if (isBeat) {
+        lastBeatTime = time;
+        
+        // Yeni dalga halkası oluştur
+        const hue = (time / 40) % 360;
+        waveRings.push(new WaveRing(
+          canvas.width / 2, 
+          canvas.height / 2, 
+          `hsl(${hue}, 90%, 60%)`
+        ));
+      }
+      
+      // Arka planı kademeli olarak temizle - trail efekti için
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Spektrum çiz - alt kısımda bar'lar
+      const barWidth = canvas.width / bufferLength;
+      const barHeightMultiplier = canvas.height * 0.4;
       
       for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0
-        const y = canvas.height / 2 + (v - 1) * canvas.height / 4
+        const percent = dataArray[i] / 255;
+        const barHeight = percent * barHeightMultiplier;
         
-        // Dalga noktalarını kaydet - ilerleyen animasyonlar için
-        if (i % 8 === 0 && Math.random() > 0.5) {
-          wavePoints.push({
-            x: x,
-            y: y,
-            size: v * 5,
-            opacity: 1
-          })
+        // Frekans bandına göre renk
+        let color;
+        if (i < bands.bass.high) {
+          color = `hsl(${(time / 50) % 360}, 80%, 50%)`;
+        } else if (i < bands.mid.high) {
+          color = `hsl(${(time / 50 + 120) % 360}, 80%, 50%)`;
+        } else {
+          color = `hsl(${(time / 50 + 240) % 360}, 80%, 50%)`;
         }
+        
+        ctx.fillStyle = color;
+        ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth * 0.9, barHeight);
+      }
+      
+      // Merkez dalga çiz - daha yumuşak
+      ctx.strokeStyle = `hsl(${(time / 50 + 180) % 360}, 90%, 60%)`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      const sliceWidth = canvas.width / bufferLength;
+      let x = 0;
+      
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = canvas.height / 2 + (v - 1) * canvas.height / 4;
         
         if (i === 0) {
-          ctx.moveTo(x, y)
+          ctx.moveTo(x, y);
         } else {
-          ctx.lineTo(x, y)
+          ctx.lineTo(x, y);
         }
         
-        x += sliceWidth
+        x += sliceWidth;
       }
       
-      ctx.stroke()
+      ctx.stroke();
       
-      // Dalga noktalarından çıkan enerji dalgaları
-      ctx.lineWidth = 1
-      wavePoints.forEach((point, i) => {
-        point.size += 5
-        point.opacity -= 0.02
-        
-        ctx.beginPath()
-        ctx.strokeStyle = `hsla(${hueRotation + 30}, 100%, 70%, ${point.opacity})`
-        ctx.arc(point.x, point.y, point.size, 0, Math.PI * 2)
-        ctx.stroke()
-        
-        // Eskimiş noktaları kaldır
-        if (point.opacity <= 0) {
-          wavePoints.splice(i, 1)
+      // Bas darbe ise ekrana flash efekti
+      if (isBeat) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${bassLevel * 0.2})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      
+      // Halkaları güncelle ve çiz
+      for (let i = waveRings.length - 1; i >= 0; i--) {
+        const active = waveRings[i].update();
+        if (!active) {
+          waveRings.splice(i, 1);
+        } else {
+          waveRings[i].draw(ctx);
         }
-      })
-      
-      // Bas seslere göre ekrana puls efekti
-      const bassValue = dataArray[0] / 255.0 // En düşük frekans değeri - bas ses
-      if (bassValue > 0.6) {
-        ctx.fillStyle = `rgba(255, 255, 100, ${bassValue * 0.3})`
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
       }
       
-      // Spektrum çizgilerini oluştur - ekranın altından çıkan dikey çizgiler
-      ctx.fillStyle = `hsl(${hueRotation + 60}, 100%, 50%)`
-      x = 0
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = dataArray[i] * 1.5
-        ctx.fillRect(x, canvas.height - barHeight, sliceWidth - 1, barHeight)
-        x += sliceWidth
+      // Parçacıkları güncelle ve çiz - global alpha sıfırla
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update(bassLevel);
+        particles[i].draw(ctx, bassLevel);
       }
-    }
+    };
     
-    draw()
+    draw();
     
     return () => {
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', resize);
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
+        cancelAnimationFrame(animationFrameRef.current);
       }
-    }
-  }, [audioVisualizerActive, analyser])
-  
+    };
+  }, [audioVisualizerActive, analyser]);
+
+
   // Component unmount olduğunda AudioContext'i kapat
   useEffect(() => {
     return () => {
