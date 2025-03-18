@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
+import Link from 'next/link'
 
 export default function StartShowClient() {
   // Tüm state ve ref hook'ları önce gelir
@@ -477,6 +477,9 @@ export default function StartShowClient() {
     )
   }
 
+  // QR kod için boyut hesaplaması - ekran genişliğine göre orantılı olması için
+  const qrSize = Math.min(Math.floor(windowSize.width * 0.12), 120); // Ekran genişliğinin %12'si, maksimum 120px
+
   return (
     // Ana container - ekranın tamamını kaplamak için özel sınıflar
     <div className="fixed inset-0 w-screen h-screen overflow-hidden m-0 p-0">
@@ -490,41 +493,30 @@ export default function StartShowClient() {
       {/* Sayfa içeriği - ana layout'u override etmek için özel stil */}
       <div className="fixed inset-0 w-full h-full p-0 z-10">
         {/* Header - responsive tasarım */}
-        <div className="flex flex-col md:flex-row justify-between items-center px-4 md:px-6 py-3 md:py-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 md:mb-0">Show Yönetimi</h1>
-          <div className="flex items-center gap-2 md:gap-4">
-            {showActive && (
-              <button
-                onClick={endShow}
-                disabled={loading}
-                className={`bg-red-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm
-                          font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {loading ? "..." : "SONLANDIR"}
-              </button>
-            )}
-            <Link 
-              href="/dashboard"
-              className="text-white px-3 md:px-4 py-1.5 md:py-2 rounded hover:text-gray-300 transition-all text-xs md:text-sm"
+        <div className="flex justify-between items-center px-4 md:px-6 py-3 md:py-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Show Yönetimi</h1>
+          {showActive && (
+            <button
+              onClick={endShow}
+              disabled={loading}
+              className={`bg-red-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm
+                        font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Geri Dön
-            </Link>
-          </div>
+              {loading ? "..." : "SONLANDIR"}
+            </button>
+          )}
         </div>
         
-        {/* QR kod bölümü - responsive tasarım */}
+        {/* QR kod bölümü - sağ üst köşeye konumlandırılmış */}
         {showActive && (
-          <div className="flex justify-center items-center px-4 py-2 md:px-6 md:py-4">
-            <div className="text-center">
-              <h2 className="text-xl md:text-2xl font-semibold mb-2 md:mb-4 text-white">Scan Me to Message Me!</h2>
-              <div className="bg-white p-3 md:p-6 inline-block rounded-lg mb-2 md:mb-4 shadow-lg">
-                <QRCodeSVG 
-                  value={showUrl} 
-                  size={windowSize.width < 768 ? Math.min(250, windowSize.width - 80) : 450} 
-                />
-              </div>
-              
+          <div className="absolute top-2 right-2 md:top-4 md:right-4 z-20">
+            <div className="bg-white p-2 rounded-lg shadow-lg">
+              <QRCodeSVG 
+                value={showUrl} 
+                size={qrSize} 
+              />
             </div>
+            <p className="text-xs mt-1 text-center text-white font-medium">Mesaj için Tara</p>
           </div>
         )}
         
@@ -545,7 +537,7 @@ export default function StartShowClient() {
         {/* Mesajlar kısmı - responsive tasarım */}
         {showActive && (
           <div className="px-4 md:px-6 pt-2 md:pt-4 pb-16 md:pb-20 overflow-y-auto" 
-               style={{ maxHeight: 'calc(100vh - 280px)' }}>
+               style={{ maxHeight: 'calc(100vh - 120px)' }}>
             {messages.length > 0 ? (
               <div className="space-y-2">
                 {messages.map((msg: { id: string; displayName: string; content: string }, index) => (
