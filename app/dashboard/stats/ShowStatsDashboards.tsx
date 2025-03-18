@@ -79,20 +79,30 @@ export default function ShowStatsDashboard() {
   const fetchPastShows = async () => {
     try {
       setLoading(true)
-      // API'ye tarih filtresi parametrelerini ekle
-      const response = await fetch(`/api/shows/past?startDate=${startDate}&endDate=${endDate}`)
+      // API'ye tarih filtresi parametrelerini ekle - Tarih biçimini düzelt
+      const response = await fetch(`/api/shows/past?startDate=${startDate}T00:00:00Z&endDate=${endDate}T23:59:59Z`)
       
       if (response.ok) {
         const data = await response.json()
-        setPastShows(data)
-        setFilteredShows(data)
+        
+        // Client tarafında da tarih filtrelemesi yap
+        const startDateTime = new Date(startDate + 'T00:00:00Z').getTime()
+        const endDateTime = new Date(endDate + 'T23:59:59Z').getTime()
+        
+        const filteredData = data.filter((show: PastShow) => {
+          const showDate = new Date(show.createdAt).getTime()
+          return showDate >= startDateTime && showDate <= endDateTime
+        })
+        
+        setPastShows(filteredData)
+        setFilteredShows(filteredData)
         setCurrentPage(1) // Yeni veri geldiğinde ilk sayfaya dön
         
         // Toplam kazanç ve mesaj sayısını hesapla
         let totalEarning = 0
         let messages = 0
         
-        data.forEach((show: PastShow) => {
+        filteredData.forEach((show: PastShow) => {
           if (show.totalEarnings) {
             totalEarning += parseFloat(Number(show.totalEarnings).toFixed(2))
           }
