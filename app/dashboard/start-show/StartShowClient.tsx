@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { QRCodeSVG } from 'qrcode.react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation' // Router hook'unu ekledik
 
 export default function StartShowClient() {
+  const router = useRouter() // Router hook'unu tanımladık
   // Tüm state ve ref hook'ları önce gelir
   const { data: session, status } = useSession()
   const [showActive, setShowActive] = useState(false)
@@ -426,7 +428,7 @@ export default function StartShowClient() {
       });
   
       if (response.ok) {
-       // Görselleştiriciyi durdur
+        // Görselleştiriciyi durdur
         if (audioContext && audioContext.state !== 'closed') {
           audioContext.close();
           setAudioContext(null);
@@ -448,6 +450,9 @@ export default function StartShowClient() {
         setShowActive(false);
         setShowId('');
         setShowUrl('');
+        
+        // Dashboard'a yönlendir - YENİ EKLENEN KISIM
+        router.push('/dashboard');
       } else {
         alert('Show sonlandırılırken bir hata oluştu.');
       }
