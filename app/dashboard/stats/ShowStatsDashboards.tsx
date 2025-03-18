@@ -173,12 +173,12 @@ export default function ShowStatsDashboard() {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
   if (status === 'loading' || loading) {
-    return <div className="container mx-auto p-6">Yükleniyor...</div>
+    return <div className="container mx-auto p-6 text-white">Yükleniyor...</div>
   }
 
   if (!session) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 text-white">
         <p>Bu sayfayı görüntülemek için giriş yapmalısınız.</p>
         <Link 
           href="/api/auth/signin/google"
@@ -191,22 +191,22 @@ export default function ShowStatsDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 bg-gray-900 text-gray-100 min-h-screen">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Show İstatistikleri</h1>
+        <h1 className="text-3xl font-bold text-gray-100">Show İstatistikleri</h1>
         <Link
           href="/dashboard"
-          className="bg-purple-600 text-white px-4 py-2 rounded"
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"
         >
           Dashboard'a Dön
         </Link>
       </div>
       
       {/* Tarih Filtresi */}
-      <div className="mb-6 bg-white p-4 rounded-lg shadow">
+      <div className="mb-6 bg-gray-800 p-4 rounded-lg shadow-lg">
         <form onSubmit={handleFilterDates} className="flex flex-wrap items-end gap-4">
           <div>
-            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="startDate" className="block text-sm font-medium text-gray-300 mb-1">
               Başlangıç Tarihi
             </label>
             <input
@@ -214,12 +214,12 @@ export default function ShowStatsDashboard() {
               id="startDate"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="rounded border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
+              className="rounded border-gray-700 bg-gray-700 text-white shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
               required
             />
           </div>
           <div>
-            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="endDate" className="block text-sm font-medium text-gray-300 mb-1">
               Bitiş Tarihi
             </label>
             <input
@@ -227,13 +227,13 @@ export default function ShowStatsDashboard() {
               id="endDate"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="rounded border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
+              className="rounded border-gray-700 bg-gray-700 text-white shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
               required
             />
           </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
           >
             Filtrele
           </button>
@@ -242,17 +242,17 @@ export default function ShowStatsDashboard() {
       
       {/* Özet İstatistikler */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-lg shadow-lg text-white">
+        <div className="bg-gradient-to-br from-blue-700 to-indigo-800 p-6 rounded-lg shadow-lg text-white">
           <h3 className="text-xl font-semibold mb-2">Toplam Show</h3>
           <p className="text-4xl font-bold">{pastShows.length}</p>
         </div>
         
-        <div className="bg-gradient-to-br from-green-500 to-teal-600 p-6 rounded-lg shadow-lg text-white">
+        <div className="bg-gradient-to-br from-green-700 to-teal-800 p-6 rounded-lg shadow-lg text-white">
           <h3 className="text-xl font-semibold mb-2">Toplam Kazanç</h3>
           <p className="text-4xl font-bold">€{totalEarnings.toFixed(2)}</p>
         </div>
         
-        <div className="bg-gradient-to-br from-yellow-500 to-orange-600 p-6 rounded-lg shadow-lg text-white">
+        <div className="bg-gradient-to-br from-yellow-600 to-orange-700 p-6 rounded-lg shadow-lg text-white">
           <h3 className="text-xl font-semibold mb-2">Toplam Mesaj</h3>
           <p className="text-4xl font-bold">{totalMessages}</p>
         </div>
@@ -260,8 +260,8 @@ export default function ShowStatsDashboard() {
       
       {/* Tablo */}
       <div className="mb-4 overflow-x-auto">
-        <table className="min-w-full bg-gray rounded-lg overflow-hidden shadow-lg">
-          <thead className="bg-gray-200 text-gray-800">
+        <table className="min-w-full bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+          <thead className="bg-gray-700 text-gray-200">
             <tr>
               <th className="py-3 px-4 text-left">Show Adı</th>
               <th className="py-3 px-4 text-left">Tarih</th>
@@ -271,19 +271,19 @@ export default function ShowStatsDashboard() {
               <th className="py-3 px-4 text-center">İşlemler</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-300">
+          <tbody className="divide-y divide-gray-700">
             {currentShows.length > 0 ? (
               currentShows.map(show => (
-                <tr key={show.id} className="bg-white hover:bg-gray-50">
-                  <td className="py-3 px-4 text-gray-800">{show.title}</td>
-                  <td className="py-3 px-4 text-gray-800">{formatDate(show.createdAt)}</td>
-                  <td className="py-3 px-4 text-gray-800">{calculateDuration(show.createdAt, show.endedAt)}</td>
-                  <td className="py-3 px-4 text-right text-gray-800">{show.messageCount || 0}</td>
-                  <td className="py-3 px-4 text-right text-gray-800">€{Number(show.totalEarnings || 0).toFixed(2)}</td>
+                <tr key={show.id} className="bg-gray-800 hover:bg-gray-700 transition-colors">
+                  <td className="py-3 px-4 text-gray-200">{show.title}</td>
+                  <td className="py-3 px-4 text-gray-200">{formatDate(show.createdAt)}</td>
+                  <td className="py-3 px-4 text-gray-200">{calculateDuration(show.createdAt, show.endedAt)}</td>
+                  <td className="py-3 px-4 text-right text-gray-200">{show.messageCount || 0}</td>
+                  <td className="py-3 px-4 text-right text-gray-200">€{Number(show.totalEarnings || 0).toFixed(2)}</td>
                   <td className="py-3 px-4 text-center">
                     <button
                       onClick={() => fetchShowDetails(show.id)}
-                      className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700 transition"
+                      className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700 transition-colors"
                     >
                       Detaylar
                     </button>
@@ -292,7 +292,7 @@ export default function ShowStatsDashboard() {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="py-4 px-4 text-center text-gray-500">
+                <td colSpan={6} className="py-4 px-4 text-center text-gray-400">
                   Seçilen tarih aralığında show bulunmuyor.
                 </td>
               </tr>
@@ -304,14 +304,14 @@ export default function ShowStatsDashboard() {
       {/* Sayfalama */}
       {filteredShows.length > 0 && (
         <div className="flex justify-between items-center mb-8">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-400">
             Toplam {filteredShows.length} show, Sayfa {currentPage}/{totalPages}
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
             >
               Önceki
             </button>
@@ -319,7 +319,7 @@ export default function ShowStatsDashboard() {
               <button
                 key={pageNum}
                 onClick={() => paginate(pageNum)}
-                className={`px-3 py-1 rounded ${pageNum === currentPage ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-3 py-1 rounded ${pageNum === currentPage ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
               >
                 {pageNum}
               </button>
@@ -327,7 +327,7 @@ export default function ShowStatsDashboard() {
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
             >
               Sonraki
             </button>
@@ -340,47 +340,51 @@ export default function ShowStatsDashboard() {
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+              <div className="absolute inset-0 bg-black opacity-75"></div>
             </div>
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" role="dialog" aria-modal="true" aria-labelledby="modal-headline">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="inline-block align-bottom bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" role="dialog" aria-modal="true" aria-labelledby="modal-headline">
+              <div className="bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-headline">
+                  <h3 className="text-lg leading-6 font-medium text-white" id="modal-headline">
                       {selectedShow.title} Detayları
                     </h3>
                     <div className="mt-2">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                          <h3 className="text-lg font-semibold mb-2 text-gray-900">Show Bilgileri</h3>
-                          <p className="text-gray-800">
+                          <h3 className="text-lg font-semibold mb-2 text-gray-200">Show Bilgileri</h3>
+                          <p className="text-gray-300">
                             <span className="font-medium">Başlangıç:</span> {formatDate(selectedShow.createdAt)}
                           </p>
                           {selectedShow.endedAt && (
-                            <p className="text-gray-800">
+                            <p className="text-gray-300">
                               <span className="font-medium">Bitiş:</span> {formatDate(selectedShow.endedAt)}
                             </p>
                           )}
-                          <p className="text-gray-800">
+                          <p className="text-gray-300">
                             <span className="font-medium">Süre:</span> {calculateDuration(selectedShow.createdAt, selectedShow.endedAt)}
                           </p>
-                          <p className="text-gray-800">
-                            <span className="font-medium">Toplam Kazanç:</span> €{Number(selectedShow.totalEarnings || 0).toFixed(2)}
+                          <p className="text-gray-300">
+                            <span className="font-medium">Toplam Kazanç:</span> €{
+                              (selectedShow.messages || [])
+                                .reduce((sum, message) => sum + (Number(message.payment) || 0), 0)
+                                .toFixed(2)
+                            }
                           </p>
                         </div>
                         
                         <div>
-                          <h3 className="text-lg font-semibold mb-2 text-gray-900">Mesaj İstatistikleri</h3>
-                          <p className="text-gray-800">
+                          <h3 className="text-lg font-semibold mb-2 text-gray-200">Mesaj İstatistikleri</h3>
+                          <p className="text-gray-300">
                             <span className="font-medium">Toplam Mesaj:</span> {selectedShow.messageCount}
                           </p>
-                          <p className="text-gray-800">
+                          <p className="text-gray-300">
                             <span className="font-medium">Ödemeli Mesajlar:</span> {selectedShow.messages.filter(m => m.payment > 0).length}
                           </p>
-                          <p className="text-gray-800">
+                          <p className="text-gray-300">
                             <span className="font-medium">Ortalama Ödeme:</span> €{(
                               selectedShow.messages.reduce((sum, m) => sum + (m.payment || 0), 0) / 
                               Math.max(1, selectedShow.messages.filter(m => m.payment > 0).length)
@@ -391,41 +395,41 @@ export default function ShowStatsDashboard() {
                 
                       {/* Mesaj Listesi */}
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900">Mesajlar</h3>
+                        <h3 className="text-lg font-medium text-gray-200">Mesajlar</h3>
                         {selectedShow.messages.length > 0 ? (
                         <div className="space-y-2 max-h-96 overflow-y-auto">
                           {selectedShow.messages.map(message => (
                             <div 
                               key={message.id} 
-                              className={`p-3 bg-gray-50 rounded border-l-4 ${message.payment > 0 ? 'border-green-500' : 'border-gray-300'}`}
+                              className={`p-3 bg-gray-700 rounded border-l-4 ${message.payment > 0 ? 'border-green-500' : 'border-gray-600'}`}
                             >
                               <div className="flex justify-between">
-                                <p className="font-medium text-gray-900">
+                                <p className="font-medium text-gray-200">
                                   {message.displayName}
                                   {message.payment > 0 && (
-                                    <span className="ml-2 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                    <span className="ml-2 text-sm bg-green-800 text-green-100 px-2 py-1 rounded-full">
                                     €{Number(message.payment).toFixed(2)}
                                     </span>
                                   )}
                                 </p>
-                                <p className="text-sm text-gray-500">{formatDate(message.createdAt)}</p>
+                                <p className="text-sm text-gray-400">{formatDate(message.createdAt)}</p>
                               </div>
-                              <p className="mt-1 text-gray-700">{message.content}</p>
+                              <p className="mt-1 text-gray-300">{message.content}</p>
                             </div>
                           ))}
                         </div>
                         ) : (
-                          <p className="text-gray-500">Bu show'da mesaj bulunmuyor.</p>
+                          <p className="text-gray-400">Bu show'da mesaj bulunmuyor.</p>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button 
                   type="button" 
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={closeModal}
                 >
                   Kapat
