@@ -477,8 +477,8 @@ export default function StartShowClient() {
     )
   }
 
-  // QR kod için boyut hesaplaması - ekran genişliğine göre orantılı olması için
-  const qrSize = Math.min(Math.floor(windowSize.width * 0.12), 120); // Ekran genişliğinin %12'si, maksimum 120px
+  // QR kod için boyut hesaplaması - ekran yüksekliğinin %30'u olacak şekilde
+  const qrSize = Math.floor(windowSize.height * 0.3);
 
   return (
     // Ana container - ekranın tamamını kaplamak için özel sınıflar
@@ -499,24 +499,24 @@ export default function StartShowClient() {
             <button
               onClick={endShow}
               disabled={loading}
-              className={`bg-red-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm
+              className={`bg-red-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-base
                         font-semibold hover:bg-red-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {loading ? "..." : "SONLANDIR"}
+              {loading ? "..." : "SHOW SONLANDIR"}
             </button>
           )}
         </div>
         
-        {/* QR kod bölümü - sağ üst köşeye konumlandırılmış */}
+        {/* QR kod bölümü - sağ üst köşeye konumlandırılmış ve daha büyük */}
         {showActive && (
-          <div className="absolute top-2 right-2 md:top-4 md:right-4 z-20">
-            <div className="bg-white p-2 rounded-lg shadow-lg">
+          <div className="absolute top-24 right-6 md:top-28 md:right-10 z-20">
+            <div className="bg-white p-3 rounded-lg shadow-lg">
               <QRCodeSVG 
                 value={showUrl} 
                 size={qrSize} 
               />
             </div>
-            <p className="text-xs mt-1 text-center text-white font-medium">Mesaj için Tara</p>
+            <p className="text-sm md:text-base mt-2 text-center text-white font-medium">Mesaj için Tara</p>
           </div>
         )}
         
